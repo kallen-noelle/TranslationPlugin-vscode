@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  :root {
+    --bg: var(--vscode-editor-background, #1e1e1e);
+    --fg: var(--vscode-editor-foreground, #cccccc);
+    --border: var(--vscode-widget-border, #454545);
+    --input-bg: var(--vscode-input-background, #3c3c3c);
+    --input-fg: var(--vscode-input-foreground, #cccccc);
+    --input-border: var(--vscode-input-border, transparent);
+    --button-bg: var(--vscode-button-background, #0e639c);
+    --button-fg: var(--vscode-button-foreground, #ffffff);
+    --muted: var(--vscode-descriptionForeground, #9d9d9d);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 12px;
+    font-family: var(--vscode-font-family, sans-serif);
+    font-size: 13px;
+    color: var(--fg);
+    background: var(--bg);
+  }
+  .row { display: flex; align-items: center; gap: 6px; }
+  .icon { width: 14px; height: 14px; vertical-align: -2px; margin-right: 4px; }
+  .lang-bar { margin-bottom: 10px; }
+  .lang-bar select {
+    flex: 1;
+    background: var(--input-bg);
+    color: var(--input-fg);
+    border: 1px solid var(--input-border);
+    padding: 4px 6px;
+    border-radius: 2px;
+    font-size: 12px;
+  }
+  .swap-btn {
+    background: transparent;
+    border: none;
+    color: var(--fg);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 2px 6px;
+  }
+  .swap-btn:hover { opacity: 0.8; }
+  .engine-tag {
+    font-size: 11px;
+    color: var(--muted);
+    padding: 2px 8px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    white-space: nowrap;
+  }
+  textarea {
+    width: 100%;
+    min-height: 90px;
+    resize: vertical;
+    background: var(--input-bg);
+    color: var(--input-fg);
+    border: 1px solid var(--input-border);
+    border-radius: 2px;
+    padding: 8px;
+    font-family: inherit;
+    font-size: 14px;
+  }
+  .btn-row { margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn {
+    background: var(--button-bg);
+    color: var(--button-fg);
+    border: none;
+    padding: 5px 14px;
+    border-radius: 2px;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  .btn:hover { opacity: 0.9; }
+  .btn:disabled { opacity: 0.5; cursor: default; }
+  .btn.secondary {
+    background: transparent;
+    color: var(--fg);
+    border: 1px solid var(--border);
+  }
+  .result {
+    margin-top: 14px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 12px;
+    min-height: 60px;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .result .original {
+    font-size: 15px;
+    font-weight: 500;
+    margin-bottom: 8px;
+  }
+  .result .original .lang { color: var(--muted); font-weight: normal; font-size: 11px; }
+  .result .translation {
+    font-size: 16px;
+    color: var(--vscode-editor-foreground, #d4d4d4);
+  }
+  .result .translit { color: var(--muted); font-size: 13px; margin-top: 4px; }
+  .result .dict { margin-top: 10px; }
+  .result .dict .dict-pos {
+    color: var(--vscode-textLink-foreground, #3794ff);
+    font-weight: 600;
+    margin-top: 8px;
+  }
+  .result .dict .dict-term { font-weight: 600; }
+  .result .dict .dict-entry { color: var(--muted); }
+  .result .loading { color: var(--muted); }
+  .result .error { color: var(--vscode-errorForeground, #f48771); }
+  .hint { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  .history { margin-top: 16px; }
+  .history h3 {
+    font-size: 12px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .history h3 button {
+    background: transparent; border: none; color: var(--muted);
+    cursor: pointer; font-size: 11px; text-decoration: underline;
+  }
+  .history .h-item {
+    padding: 6px 8px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    margin-bottom: 6px;
+    cursor: pointer;
+  }
+  .history .h-item:hover { border-color: var(--button-bg); }
+  .history .h-item .h-orig { color: var(--muted); font-size: 12px; }
+  .history .h-item .h-trans { font-size: 14px; margin-top: 2px; }
+</style>
+</head>
+<body>
+  <div class="row lang-bar">
+    <select id="srcLang"></select>
+    <button class="swap-btn" id="swapBtn" title="Swap languages"><img class="icon" data-dark="{{MEDIA}}/icons/swap.svg" alt="swap"></button>
+    <select id="targetLang"></select>
+  </div>
+
+  <textarea id="input" placeholder="输入要翻译的文本..."></textarea>
+  <div class="btn-row">
+    <button class="btn" id="translateBtn"><img class="icon" data-dark="{{MEDIA}}/icons/translation.svg" alt="translate">翻译</button>
+    <button class="btn secondary" id="clearBtn">清空</button>
+    <button class="btn secondary" id="ttsBtn"><img class="icon" data-dark="{{MEDIA}}/icons/speech.svg" alt="speak">朗读</button>
+    <button class="btn secondary" id="copyBtn">复制译文</button>
+    <button class="btn secondary" id="saveBtn"><img class="icon" data-dark="{{MEDIA}}/icons/starOn.svg" alt="save">存词</button>
+    <button class="btn secondary" id="wordBtn"><img class="icon" data-dark="{{MEDIA}}/icons/wordbook.svg" alt="wordbook">生词本</button>
+    <span class="engine-tag" id="engineTag"></span>
+  </div>
+
+  <div class="result" id="result">
+    <div class="loading" id="placeholder">在编辑器中选中文本后翻译,或在上方输入。</div>
+  </div>
+
+  <div class="history" id="historyBox" style="display:none;">
+    <h3><span>历史记录</span><button id="clearHistoryBtn">清空</button></h3>
+    <div id="historyList"></div>
+  </div>
+
+<script>
+  (function () {
+    const vscode = acquireVsCodeApi();
+    const $ = (id) => document.getElementById(id);
+
+    let state = { srcLang: 'auto', targetLang: 'zh-CN', result: null };
+
+    // Swap icons to the *_dark variants in dark themes.
+    function applyTheme() {
+      const dark = document.body.classList.contains('vscode-dark');
+      document.querySelectorAll('img.icon[data-dark]').forEach((img) => {
+        const base = img.getAttribute('data-dark');
+        img.src = dark ? base.replace('.svg', '_dark.svg') : base;
+      });
+    }
+    applyTheme();
+
+    $('translateBtn').addEventListener('click', doTranslate);
+    $('clearBtn').addEventListener('click', () => {
+      $('input').value = '';
+      state.result = null;
+      renderResult(null);
+    });
+    $('swapBtn').addEventListener('click', () => {
+      const s = $('srcLang').value, t = $('targetLang').value;
+      $('srcLang').value = t;
+      $('targetLang').value = s;
+      vscode.postMessage({ type: 'setLanguages', srcLang: t, targetLang: s });
+      if ($('input').value) doTranslate();
+    });
+    $('input').addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') doTranslate();
+    });
+    $('srcLang').addEventListener('change', () => vscode.postMessage({ type: 'setLanguages', srcLang: $('srcLang').value, targetLang: $('targetLang').value }));
+    $('targetLang').addEventListener('change', () => {
+      vscode.postMessage({ type: 'setLanguages', srcLang: $('srcLang').value, targetLang: $('targetLang').value });
+      if ($('input').value) doTranslate();
+    });
+
+    $('ttsBtn').addEventListener('click', () => {
+      const result = state.result;
+      if (!result || !result.translation) return;
+      vscode.postMessage({ type: 'speak', text: result.translation, lang: result.targetLang });
+    });
+    $('copyBtn').addEventListener('click', () => {
+      const result = state.result;
+      if (!result || !result.translation) return;
+      vscode.postMessage({ type: 'copy', text: result.translation });
+    });
+    $('saveBtn').addEventListener('click', () => {
+      const result = state.result;
+      if (!result || !result.translation) return;
+      vscode.postMessage({ type: 'saveWord', original: result.original, translation: result.translation, srcLang: result.srcLang, targetLang: result.targetLang });
+    });
+    $('wordBtn').addEventListener('click', () => {
+      vscode.postMessage({ type: 'openWordBook' });
+    });
+    $('clearHistoryBtn').addEventListener('click', () => vscode.postMessage({ type: 'clearHistory' }));
+
+    function doTranslate() {
+      const text = $('input').value.trim();
+      if (!text) return;
+      setLoading();
+      vscode.postMessage({
+        type: 'translate',
+        text,
+        srcLang: $('srcLang').value,
+        targetLang: $('targetLang').value,
+      });
+    }
+
+    function setLoading() {
+      $('result').innerHTML = '<div class="loading">翻译中...</div>';
+    }
+
+    function renderResult(result) {
+      state.result = result;
+      const el = $('result');
+      if (!result) {
+        el.innerHTML = '<div class="loading">在编辑器中选中文本后翻译,或在上方输入。</div>';
+        return;
+      }
+      let html = '';
+      html += '<div class="original">' + esc(result.original);
+      if (result.srcLang && result.srcLang !== 'auto') {
+        html += ' <span class="lang">[' + esc(result.srcLang) + ']</span>';
+      }
+      html += '</div>';
+      html += '<div class="translation">' + esc(result.translation || '') + '</div>';
+      if (result.transliteration) {
+        html += '<div class="translit">' + esc(result.transliteration) + '</div>';
+      }
+      if (result.dict && result.dict.length) {
+        html += '<div class="dict">';
+        for (const d of result.dict) {
+          html += '<div class="dict-pos">' + esc(d.pos || '') + ' · ' + esc(d.term || '') + '</div>';
+          for (const e of (d.entries || [])) {
+            html += '<div class="dict-entry">' + esc(e.translation) +
+              (e.backTranslations && e.backTranslations.length ? ' <span class="dict-term">↔ ' + e.backTranslations.join(', ').slice(0, 120) + '</span>' : '') +
+              '</div>';
+          }
+        }
+        html += '</div>';
+      }
+      el.innerHTML = html;
+    }
+
+    function renderHistory(entries) {
+      const box = $('historyBox');
+      const list = $('historyList');
+      if (!entries || entries.length === 0) {
+        box.style.display = 'none';
+        return;
+      }
+      box.style.display = 'block';
+      list.innerHTML = '';
+      for (const e of entries.slice(0, 20)) {
+        const item = document.createElement('div');
+        item.className = 'h-item';
+        item.innerHTML = '<div class="h-orig">' + esc(e.original) + '</div><div class="h-trans">' + esc(e.translation) + '</div>';
+        item.addEventListener('click', () => {
+          $('input').value = e.original;
+          vscode.postMessage({ type: 'setLanguages', srcLang: e.srcLang, targetLang: e.targetLang });
+          vscode.postMessage({ type: 'translate', text: e.original, srcLang: e.srcLang, targetLang: e.targetLang });
+        });
+        list.appendChild(item);
+      }
+    }
+
+    function esc(s) {
+      return String(s ?? '').replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+      }[c]));
+    }
+
+    window.addEventListener('message', (event) => {
+      const msg = event.data;
+      switch (msg.type) {
+        case 'languages': {
+          const s = $('srcLang'), t = $('targetLang');
+          for (const sel of [s, t]) {
+            sel.innerHTML = '';
+            for (const l of msg.languages) {
+              const opt = document.createElement('option');
+              opt.value = l.code;
+              opt.textContent = l.name + (l.nameZh ? ' (' + l.nameZh + ')' : '');
+              sel.appendChild(opt);
+            }
+          }
+          break;
+        }
+        case 'init':
+          if (msg.srcLang) $('srcLang').value = msg.srcLang;
+          if (msg.targetLang) $('targetLang').value = msg.targetLang;
+          if (msg.activeEngine) $('engineTag').textContent = msg.activeEngine;
+          break;
+        case 'setText':
+          if (msg.text) {
+            $('input').value = msg.text;
+            doTranslate();
+          }
+          break;
+        case 'result':
+          renderResult(msg.result);
+          break;
+        case 'error':
+          $('result').innerHTML = '<div class="error">' + esc(msg.message) + '</div>';
+          break;
+        case 'history':
+          renderHistory(msg.entries);
+          break;
+      }
+    });
+
+    // The extension initializes us.
+    vscode.postMessage({ type: 'ready' });
+  })();
+</script>
+</body>
+</html>

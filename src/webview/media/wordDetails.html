@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  :root {
+    --bg: var(--vscode-editor-background, #1e1e1e);
+    --fg: var(--vscode-editor-foreground, #cccccc);
+    --border: var(--vscode-widget-border, #454545);
+    --input-bg: var(--vscode-input-background, #3c3c3c);
+    --input-fg: var(--vscode-input-foreground, #cccccc);
+    --muted: var(--vscode-descriptionForeground, #9d9d9d);
+    --button-bg: var(--vscode-button-background, #0e639c);
+    --button-fg: var(--vscode-button-foreground, #ffffff);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 20px;
+    font-family: var(--vscode-font-family, sans-serif);
+    font-size: 13px; color: var(--fg); background: var(--bg);
+  }
+  .word { font-size: 26px; font-weight: 700; }
+  .phonetic-line { color: var(--muted); font-size: 14px; margin: 2px 0 14px; }
+  .field-label { color: var(--muted); font-size: 12px; margin: 12px 0 4px; }
+  input, textarea {
+    width: 100%;
+    background: var(--input-bg); color: var(--input-fg);
+    border: 1px solid var(--border); border-radius: 2px;
+    padding: 6px 8px; font-family: inherit; font-size: 13px;
+  }
+  textarea { min-height: 120px; resize: vertical; line-height: 1.5; }
+  .meta { color: var(--muted); font-size: 12px; margin-top: 10px; display: flex; gap: 14px; }
+  .actions { margin-top: 14px; display: flex; gap: 8px; }
+  .btn {
+    background: var(--button-bg); color: var(--button-fg);
+    border: none; padding: 6px 16px; border-radius: 2px; cursor: pointer; font-size: 13px;
+  }
+  .btn:hover { opacity: 0.9; }
+  .btn.secondary { background: transparent; border: 1px solid var(--border); color: var(--fg); }
+  .saved { color: var(--vscode-testing-iconPassed, #4ec9b0); font-size: 12px; margin-left: 8px; }
+</style>
+</head>
+<body>
+  <div class="word" id="word"></div>
+  <div class="phonetic-line" id="phoneticDisplay"></div>
+
+  <div class="field-label">音标</div>
+  <input id="phonetic" placeholder="音标">
+
+  <div class="field-label">标签(逗号分隔)</div>
+  <input id="tags" placeholder="例如: 编程, 常用">
+
+  <div class="field-label">释义</div>
+  <textarea id="explanation"></textarea>
+
+  <div class="meta">
+    <span id="langs"></span>
+    <span id="date"></span>
+  </div>
+
+  <div class="actions">
+    <button class="btn" id="saveBtn">保存</button>
+    <button class="btn secondary" id="speakBtn">朗读</button>
+  </div>
+<script>
+  (function () {
+    const vscode = acquireVsCodeApi();
+    let entryId = null;
+
+    document.getElementById('saveBtn').addEventListener('click', () => {
+      vscode.postMessage({
+        type: 'save',
+        id: entryId,
+        phonetic: document.getElementById('phonetic').value,
+        tags: document.getElementById('tags').value,
+        explanation: document.getElementById('explanation').value,
+      });
+    });
+    document.getElementById('speakBtn').addEventListener('click', () => {
+      vscode.postMessage({
+        type: 'speak',
+        text: document.getElementById('explanation').value,
+        lang: document.getElementById('langs').dataset.target,
+      });
+    });
+
+    window.addEventListener('message', (event) => {
+      const msg = event.data;
+      if (msg.type !== 'entry') return;
+      entryId = msg.entry.id;
+      document.getElementById('word').textContent = msg.entry.original;
+      document.getElementById('phoneticDisplay').textContent = msg.entry.phonetic || '';
+      document.getElementById('phonetic').value = msg.entry.phonetic || '';
+      document.getElementById('tags').value = msg.entry.tags || '';
+      document.getElementById('explanation').value = msg.entry.translation || '';
+      document.getElementById('langs').textContent = msg.entry.srcLang + ' → ' + msg.entry.targetLang;
+      document.getElementById('langs').dataset.target = msg.entry.targetLang;
+      document.getElementById('date').textContent = msg.entry.addedAt
+        ? new Date(msg.entry.addedAt).toLocaleString()
+        : '';
+    });
+
+    vscode.postMessage({ type: 'ready' });
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,445 @@
+{
+  "name": "translation-plugin-vscode",
+  "displayName": "Translation",
+  "description": "Translation plugin for Visual Studio Code. Multiple translation engines, TTS, word book, translation dialog and more.",
+  "version": "0.1.6",
+  "publisher": "translation-plugin",
+  "license": "MIT",
+  "type": "module",
+  "icon": "media/icon.png",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "translation",
+    "translate",
+    "translator",
+    "词典",
+    "翻译"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "translation.showDialog",
+        "title": "Translation: Show Translation Dialog..."
+      },
+      {
+        "command": "translation.translate",
+        "title": "Translation: Translate"
+      },
+      {
+        "command": "translation.replaceWithTranslation",
+        "title": "Translation: Replace with Translation"
+      },
+      {
+        "command": "translation.translateDocument",
+        "title": "Translation: Translate Document"
+      },
+      {
+        "command": "translation.translateComments",
+        "title": "Translation: Translate Comments in Selection"
+      },
+      {
+        "command": "translation.switchEngine",
+        "title": "Translation: Switch Engine"
+      },
+      {
+        "command": "translation.tts",
+        "title": "Translation: Text to Speech"
+      },
+      {
+        "command": "translation.wordbook",
+        "title": "Translation: Word Book"
+      },
+      {
+        "command": "translation.wordbook.refresh",
+        "title": "Translation: Refresh Word Book",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "translation.wordbook.speak",
+        "title": "朗读",
+        "icon": "$(play)"
+      },
+      {
+        "command": "translation.wordbook.detail",
+        "title": "详情",
+        "icon": "$(open-preview)"
+      },
+      {
+        "command": "translation.wordbook.copy",
+        "title": "复制",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "translation.wordbook.delete",
+        "title": "删除",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "translation.wordbook.export",
+        "title": "导出",
+        "icon": "$(export)"
+      },
+      {
+        "command": "translation.wordbook.import",
+        "title": "导入",
+        "icon": "$(import)"
+      },
+      {
+        "command": "translation.openSettings",
+        "title": "Translation: Open Settings",
+        "icon": "$(settings-gear)"
+      },
+      {
+        "command": "translation.switchTtsEngine",
+        "title": "Translation: Switch TTS Engine",
+        "icon": "$(sound)"
+      },
+      {
+        "command": "translation.wordOfDay",
+        "title": "Translation: Word of the Day"
+      },
+      {
+        "command": "translation.saveWordBook",
+        "title": "Translation: Save to Word Book"
+      },
+      {
+        "command": "translation.configure",
+        "title": "Translation: Configure"
+      },
+      {
+        "command": "translation.showLog",
+        "title": "Translation: Show Log"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "translation.showDialog",
+        "key": "ctrl+shift+o",
+        "mac": "cmd+ctrl+i"
+      },
+      {
+        "command": "translation.translate",
+        "key": "ctrl+shift+y",
+        "mac": "cmd+ctrl+u"
+      },
+      {
+        "command": "translation.replaceWithTranslation",
+        "key": "ctrl+shift+x",
+        "mac": "cmd+ctrl+o"
+      },
+      {
+        "command": "translation.switchEngine",
+        "key": "ctrl+shift+s",
+        "mac": "cmd+ctrl+y"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "translation",
+          "title": "Translation",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "translation": [
+        {
+          "type": "tree",
+          "id": "translation.wordbook",
+          "name": "Word Book",
+          "icon": "media/icons/wordbook.svg",
+          "contextualTitle": "Word Book"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "translation.wordbook",
+        "contents": "生词本为空。选中文本后运行 \"Translation: Save to Word Book\" 保存单词。\n[打开翻译弹窗](command:translation.showDialog)"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "translation.translate",
+          "group": "translation@1"
+        },
+        {
+          "command": "translation.replaceWithTranslation",
+          "group": "translation@2"
+        },
+        {
+          "command": "translation.saveWordBook",
+          "group": "translation@3"
+        },
+        {
+          "command": "translation.showDialog",
+          "group": "translation@4"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "translation.wordbook.detail",
+          "group": "inline@1",
+          "when": "view == translation.wordbook && viewItem == wordBookItem"
+        },
+        {
+          "command": "translation.wordbook.copy",
+          "group": "inline@2",
+          "when": "view == translation.wordbook && viewItem == wordBookItem"
+        },
+        {
+          "command": "translation.wordbook.delete",
+          "group": "inline@3",
+          "when": "view == translation.wordbook && viewItem == wordBookItem"
+        },
+        {
+          "command": "translation.wordbook.speak",
+          "group": "translation@1",
+          "when": "view == translation.wordbook && viewItem == wordBookItem"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "translation.wordbook.refresh",
+          "group": "navigation@1",
+          "when": "view == translation.wordbook"
+        },
+        {
+          "command": "translation.wordOfDay",
+          "group": "navigation@2",
+          "when": "view == translation.wordbook"
+        },
+        {
+          "command": "translation.switchEngine",
+          "group": "settings@1",
+          "when": "view == translation.wordbook"
+        },
+        {
+          "command": "translation.switchTtsEngine",
+          "group": "settings@2",
+          "when": "view == translation.wordbook"
+        },
+        {
+          "command": "translation.openSettings",
+          "group": "settings@3",
+          "when": "view == translation.wordbook"
+        }
+      ],
+      "view/title/context": [
+        {
+          "command": "translation.wordbook.export",
+          "group": "wordbook@1",
+          "when": "view == translation.wordbook"
+        },
+        {
+          "command": "translation.wordbook.import",
+          "group": "wordbook@2",
+          "when": "view == translation.wordbook"
+        },
+        {
+          "command": "translation.switchEngine",
+          "group": "settings@1",
+          "when": "view == translation.wordbook"
+        },
+        {
+          "command": "translation.switchTtsEngine",
+          "group": "settings@2",
+          "when": "view == translation.wordbook"
+        },
+        {
+          "command": "translation.openSettings",
+          "group": "settings@3",
+          "when": "view == translation.wordbook"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "translation.translate",
+          "when": "editorTextFocus"
+        },
+        {
+          "command": "translation.replaceWithTranslation",
+          "when": "editorTextFocus"
+        },
+        {
+          "command": "translation.translateComments",
+          "when": "editorTextFocus"
+        },
+        {
+          "command": "translation.tts",
+          "when": "editorTextFocus"
+        },
+        {
+          "command": "translation.wordbook.refresh"
+        },
+        {
+          "command": "translation.wordbook.export"
+        },
+        {
+          "command": "translation.wordbook.import"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Translation",
+      "properties": {
+        "translation.defaultEngine": {
+          "type": "string",
+          "enum": [
+            "google",
+            "microsoft",
+            "openai"
+          ],
+          "enumDescriptions": [
+            "Google Translate (free)",
+            "Microsoft Translator (free)",
+            "OpenAI Translator (requires API key)"
+          ],
+          "default": "google",
+          "description": "Default translation engine."
+        },
+        "translation.sourceLanguage": {
+          "type": "string",
+          "default": "auto",
+          "description": "Source language code. Use \"auto\" for automatic detection."
+        },
+        "translation.targetLanguage": {
+          "type": "string",
+          "default": "zh-CN",
+          "description": "Target language code."
+        },
+        "translation.replaceSeparator": {
+          "type": "string",
+          "enum": [
+            "camelCase",
+            "snake_case",
+            "PascalCase",
+            "kebab-case",
+            "original"
+          ],
+          "enumDescriptions": [
+            "camelCase",
+            "snake_case",
+            "PascalCase",
+            "kebab-case",
+            "Keep the translation as-is"
+          ],
+          "default": "original",
+          "description": "Word separator style when replacing with translation."
+        },
+        "translation.hover.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable translation on hover."
+        },
+        "translation.hover.delay": {
+          "type": "number",
+          "default": 300,
+          "minimum": 0,
+          "description": "Hover translation delay in milliseconds."
+        },
+        "translation.ttsEngine": {
+          "type": "string",
+          "enum": [
+            "edge",
+            "openai"
+          ],
+          "enumDescriptions": [
+            "Microsoft Edge TTS (free)",
+            "OpenAI TTS (requires API key)"
+          ],
+          "default": "edge",
+          "description": "Default text-to-speech engine."
+        },
+        "translation.tts.edge.voice": {
+          "type": "string",
+          "default": "",
+          "description": "Microsoft Edge TTS voice name (e.g. zh-CN-XiaoxiaoNeural). Leave empty for auto."
+        },
+        "translation.tts.edge.speed": {
+          "type": "string",
+          "enum": [
+            "-50%",
+            "-25%",
+            "0%",
+            "+25%",
+            "+50%"
+          ],
+          "default": "0%",
+          "description": "Edge TTS speech rate."
+        },
+        "translation.tts.openai.voice": {
+          "type": "string",
+          "enum": [
+            "alloy",
+            "echo",
+            "fable",
+            "onyx",
+            "nova",
+            "shimmer"
+          ],
+          "default": "alloy",
+          "description": "OpenAI TTS voice."
+        },
+        "translation.openai.baseUrl": {
+          "type": "string",
+          "default": "https://api.openai.com",
+          "description": "OpenAI API base URL (compatible endpoints supported)."
+        },
+        "translation.openai.model": {
+          "type": "string",
+          "default": "gpt-4o-mini",
+          "description": "OpenAI chat model used for translation."
+        },
+        "translation.history.maxEntries": {
+          "type": "number",
+          "default": 100,
+          "minimum": 10,
+          "maximum": 500,
+          "description": "Maximum number of translation history entries to keep."
+        },
+        "translation.wordbook.path": {
+          "type": "string",
+          "default": "",
+          "description": "Word book database path (file or directory). Leave empty to use the original TranslationPlugin's default location so both plugins share the word book."
+        },
+        "translation.notification.showResult": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show translation result in a notification."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "make-icon": "node scripts/make-icon.mjs",
+    "vscode:prepublish": "npm run compile",
+    "package": "npm run compile && vsce package"
+  },
+  "dependencies": {
+    "better-sqlite3": "^13.0.3",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.90.0",
+    "@types/ws": "^8.5.10",
+    "@vscode/vsce": "^3.9.2",
+    "sharp": "^0.35.3",
+    "typescript": "^5.4.5"
+  }
+}

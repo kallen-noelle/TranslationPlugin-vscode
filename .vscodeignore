@@ -1,0 +1,14 @@
+.vscode/**
+.vscode-test/**
+scripts/**
+**/*.map
+**/tsconfig.json
+.gitignore
+**/*.ts
+node_modules/.cache/**
+# Icon generation (resvg) is a build-time dev dependency, not needed at runtime.
+node_modules/@resvg/**
+# Keep webview HTML/CSS/JS but exclude TypeScript sources.
+src/**/*.ts
+src/**/*.map
+!src/webview/media/**

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  :root {
+    --bg: var(--vscode-editor-background, #1e1e1e);
+    --fg: var(--vscode-editor-foreground, #cccccc);
+    --border: var(--vscode-widget-border, #454545);
+    --muted: var(--vscode-descriptionForeground, #9d9d9d);
+    --button-bg: var(--vscode-button-background, #0e639c);
+    --button-fg: var(--vscode-button-foreground, #ffffff);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px;
+    font-family: var(--vscode-font-family, sans-serif);
+    color: var(--fg); background: var(--bg);
+    display: flex; justify-content: center;
+  }
+  .card {
+    max-width: 480px; width: 100%;
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 24px;
+  }
+  .card .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
+  .card .word { font-size: 32px; font-weight: 700; margin: 8px 0 2px; }
+  .card .phonetic { color: var(--muted); font-size: 14px; margin-bottom: 12px; }
+  .card .translation { font-size: 16px; margin-bottom: 16px; }
+  .card .example {
+    background: var(--vscode-textBlockQuote-background, transparent);
+    border-left: 3px solid var(--button-bg);
+    padding: 8px 12px; margin-bottom: 6px; font-size: 13px;
+  }
+  .card .example-trans { color: var(--muted); font-size: 13px; margin-bottom: 16px; }
+  .btn {
+    background: var(--button-bg); color: var(--button-fg); border: none;
+    padding: 6px 16px; border-radius: 2px; cursor: pointer; font-size: 13px;
+  }
+  .btn:hover { opacity: 0.9; }
+  .btn.secondary { background: transparent; border: 1px solid var(--border); color: var(--fg); }
+  .actions { display: flex; gap: 8px; }
+  .icon { width: 14px; height: 14px; vertical-align: -2px; margin-right: 4px; }
+  .date { color: var(--muted); font-size: 12px; margin-top: 16px; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="label">Word of the Day</div>
+    <div class="word" id="word"></div>
+    <div class="phonetic" id="phonetic"></div>
+    <div class="translation" id="translation"></div>
+    <div class="example" id="example"></div>
+    <div class="example-trans" id="exampleTrans"></div>
+    <div class="actions">
+      <button class="btn" id="speakBtn"><img class="icon" data-dark="{{MEDIA}}/icons/speech.svg" alt="speak">朗读</button>
+      <button class="btn secondary" id="nextBtn">下一个</button>
+    </div>
+    <div class="date" id="date"></div>
+  </div>
+<script>
+  (function () {
+    const vscode = acquireVsCodeApi();
+    function applyTheme() {
+      const dark = document.body.classList.contains('vscode-dark');
+      document.querySelectorAll('img.icon[data-dark]').forEach((img) => {
+        const base = img.getAttribute('data-dark');
+        img.src = dark ? base.replace('.svg', '_dark.svg') : base;
+      });
+    }
+    applyTheme();
+    document.getElementById('speakBtn').addEventListener('click', () => {
+      vscode.postMessage({ type: 'speak', word: document.getElementById('word').textContent });
+    });
+    document.getElementById('nextBtn').addEventListener('click', () => {
+      vscode.postMessage({ type: 'next' });
+    });
+    window.addEventListener('message', (event) => {
+      const msg = event.data;
+      if (msg.type !== 'word') return;
+      document.getElementById('word').textContent = msg.item.word;
+      document.getElementById('phonetic').textContent = msg.item.phonetic || '';
+      document.getElementById('translation').textContent = msg.item.translation;
+      document.getElementById('example').textContent = msg.item.example;
+      document.getElementById('exampleTrans').textContent = msg.item.exampleTranslation || '';
+      document.getElementById('date').textContent = msg.date;
+    });
+    vscode.postMessage({ type: 'ready' });
+  })();
+</script>
+</body>
+</html>
