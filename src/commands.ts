@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { Config } from './config.js';
 import { translate } from './service.js';
-import { ExtractMode } from './types.js';
+import { ExtractMode, DictItem } from './types.js';
 import { extractText } from './wordExtractor.js';
 import { formatTranslation } from './replace.js';
 import { TranslationDialogPanel } from './webview/translationDialog.js';
@@ -55,8 +55,23 @@ async function translateSelection(c: CommandContext, mode: ExtractMode = Extract
     return;
   }
 
-  const { src, tgt } = getConfigLangPair();
   const config = Config.get();
+
+  // For single-word selection, show hover-style translation popup.
+  const isSingleWord = /^[\p{L}\p{N}_]+$/u.test(extracted.text.trim());
+  if (isSingleWord && config.hoverEnabled) {
+    // Move cursor to the start of the selected word, then trigger hover.
+    const targetPos = extracted.range.start;
+    editor.selection = new vscode.Selection(targetPos, targetPos);
+    // Reveal the position so the hover appears in view.
+    editor.revealRange(extracted.range, vscode.TextEditorRevealType.Default);
+    // Trigger the built-in show hover command.
+    void vscode.commands.executeCommand('editor.action.showHover');
+    return;
+  }
+
+  // Fallback: full translation with notification/dialog for longer text.
+  const { src, tgt } = getConfigLangPair();
   const result = await translateWithFeedback(extracted.text, src, tgt, {
     retry: () => void translateSelection(c, mode),
   });
@@ -384,6 +399,54 @@ export function registerCommands(c: CommandContext): vscode.Disposable[] {
     vscode.commands.registerCommand('translation.showLog', () => showLogCommand()),
     vscode.commands.registerCommand('translation.openSettings', () => openSettings()),
     vscode.commands.registerCommand('translation.switchTtsEngine', () => switchTtsEngine()),
+  );
+
+  // Internal commands used by hover provider (accept arguments from command: links).
+  disposables.push(
+    vscode.commands.registerCommand('translation.hover.speak', async (args?: { text?: string; lang?: string }) => {
+      const text = args?.text?.trim();
+      if (!text) { return; }
+      const lang = args?.lang || Config.get().sourceLanguage;
+      try {
+        await runWithProgress('朗读中…', () => speakText({ text, lang }));
+      } catch (error) {
+        showTranslationError(error);
+      }
+    }),
+    vscode.commands.registerCommand('translation.hover.copy', async (args?: { text?: string }) => {
+      const text = args?.text;
+      if (text) {
+        await vscode.env.clipboard.writeText(text);
+        void vscode.window.showInformationMessage('已复制到剪贴板');
+      }
+    }),
+    vscode.commands.registerCommand('translation.hover.save', async (args?: { original?: string; translation?: string; srcLang?: string; targetLang?: string; dict?: unknown }) => {
+      const original = args?.original?.trim();
+      const translation = args?.translation?.trim();
+      if (!original || !translation) { return; }
+      const srcLang = args?.srcLang || 'auto';
+      const targetLang = args?.targetLang || Config.get().targetLanguage;
+      const saved = await saveTranslationToWordBook({
+        original,
+        translation,
+        srcLang,
+        targetLang,
+        sourceLanguages: [srcLang],
+        dict: args?.dict as DictItem[] | undefined,
+      });
+      if (saved) { refreshWordBookView(); }
+      void vscode.window.showInformationMessage(saved ? '已加入生词本' : '该词已存在生词本中');
+    }),
+    vscode.commands.registerCommand('translation.hover.openDialog', (args?: { text?: string; srcLang?: string; targetLang?: string }) => {
+      TranslationDialogPanel.show(c.ctx);
+      if (args?.text) {
+        TranslationDialogPanel.postTranslation(
+          args.text,
+          args.srcLang || Config.get().sourceLanguage,
+          args.targetLang || Config.get().targetLanguage,
+        );
+      }
+    }),
   );
 
   // Status bar engine indicator.

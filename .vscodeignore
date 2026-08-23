@@ -5,6 +5,8 @@ scripts/**
 **/tsconfig.json
 .gitignore
 **/*.ts
+test.js
+tts_test_*.mp3
 node_modules/.cache/**
 # Icon generation (resvg) is a build-time dev dependency, not needed at runtime.
 node_modules/@resvg/**

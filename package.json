@@ -2,7 +2,7 @@
   "name": "translation-plugin-vscode",
   "displayName": "Translation",
   "description": "Translation plugin for Visual Studio Code. Multiple translation engines, TTS, word book, translation dialog and more.",
-  "version": "0.1.10",
+  "version": "0.1.17",
   "publisher": "translation-plugin",
   "license": "MIT",
   "type": "module",
@@ -157,19 +157,11 @@
       "editor/context": [
         {
           "command": "translation.translate",
-          "group": "translation@1"
+          "group": "navigation@1"
         },
         {
           "command": "translation.replaceWithTranslation",
-          "group": "translation@2"
-        },
-        {
-          "command": "translation.saveWordBook",
-          "group": "translation@3"
-        },
-        {
-          "command": "translation.showDialog",
-          "group": "translation@4"
+          "group": "navigation@2"
         }
       ],
       "view/title": [
@@ -302,6 +294,11 @@
           "minimum": 0,
           "description": "Hover translation delay in milliseconds."
         },
+        "translation.hover.docTranslation": {
+          "type": "boolean",
+          "default": true,
+          "description": "Translate function/method documentation in hover popups."
+        },
         "translation.ttsEngine": {
           "type": "string",
           "enum": [
@@ -371,6 +368,18 @@
           "type": "boolean",
           "default": true,
           "description": "Show translation result in a notification."
+        },
+        "translation.wordOfDay.autoShow": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically show the Word of the Day panel on VS Code startup."
+        },
+        "translation.wordOfDay.autoShowDelay": {
+          "type": "number",
+          "default": 5,
+          "minimum": 0,
+          "maximum": 120,
+          "description": "Delay in seconds before showing the Word of the Day on startup."
         }
       }
     }
@@ -394,5 +403,6 @@
     "@vscode/vsce": "^3.9.2",
     "sharp": "^0.35.3",
     "typescript": "^5.4.5"
-  }
+  },
+  "packageManager": "pnpm@11.22.0+sha512.1ff870c4c6133dfd88fb2afc46dd13d47f09c9794b438c6fdb47ca98caf3bc16381ee0be93a091b8e3824cf01f889f46d7d9e20910fb0be1ab0fb5baa80dd621"
 }

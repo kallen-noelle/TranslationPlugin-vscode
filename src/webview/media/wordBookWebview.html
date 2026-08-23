@@ -18,6 +18,13 @@
     --button-bg: var(--vscode-button-background, #0e639c);
     --button-fg: var(--vscode-button-foreground, #ffffff);
     --link: var(--vscode-textLink-foreground, #3794ff);
+    --menu-bg: var(--vscode-menu-background, #252526);
+    --menu-fg: var(--vscode-menu-foreground, #cccccc);
+    --menu-border: var(--vscode-menu-border, #454545);
+    --menu-selection-bg: var(--vscode-menu-selectionBackground, #094771);
+    --menu-selection-fg: var(--vscode-menu-selectionForeground, #fff);
+    --menu-separator: var(--vscode-menu-separatorBackground, #454545);
+    --highlight: var(--vscode-editor-findMatchHighlightBackground, rgba(234, 92, 0, 0.4));
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { height: 100%; }
@@ -27,12 +34,12 @@
     display: flex; flex-direction: column; overflow: hidden;
   }
 
-  /* ---------- Icon system (inline SVG, theme-adaptive) ---------- */
+  /* ---------- Icon system ---------- */
   .ic { width: 15px; height: 15px; flex: 0 0 auto; display: block; }
   .ic.use-fill { fill: currentColor; stroke: none; }
   .ic.use-stroke { fill: none; stroke: currentColor; }
 
-  /* ---------- Top toolbar (like the original: sort on left, actions on right) ---------- */
+  /* ---------- Top toolbar ---------- */
   .toolbar {
     display: flex; align-items: center; gap: 2px;
     padding: 3px 6px; border-bottom: 1px solid var(--border); flex: 0 0 auto;
@@ -46,11 +53,33 @@
   .toolbar button:hover { background: var(--row-hover); }
   .toolbar button.active { background: var(--row-active); }
   .toolbar button .sort-label { font-size: 11px; color: var(--muted); line-height: 1; }
+  .toolbar button.has-caret { padding-right: 4px; }
+  .toolbar button.has-caret .caret { font-size: 10px; opacity: 0.7; margin-left: -2px; }
 
-  /* ---------- Word-book table view (column layout; settings toggle relies on it) ---------- */
+  /* ---------- Search bar (hidden by default, toggled by menu) ---------- */
+  .searchbar {
+    display: none; align-items: center; gap: 6px;
+    padding: 4px 8px; border-bottom: 1px solid var(--border);
+    flex: 0 0 auto; background: var(--bg);
+  }
+  .searchbar.visible { display: flex; }
+  .searchbar .ic { color: var(--muted); }
+  .searchbar input {
+    flex: 1 1 auto; background: var(--input-bg); color: var(--input-fg);
+    border: 1px solid var(--input-border); border-radius: 2px;
+    padding: 4px 6px; font-size: 12px; font-family: inherit; outline: none;
+  }
+  .searchbar input:focus { border-color: var(--button-bg); }
+  .searchbar .count { font-size: 11px; color: var(--muted); white-space: nowrap; }
+  .searchbar .close-btn {
+    background: transparent; border: none; color: var(--muted);
+    cursor: pointer; padding: 2px; line-height: 0; border-radius: 3px;
+  }
+  .searchbar .close-btn:hover { background: var(--row-hover); color: var(--fg); }
+
+  /* ---------- Word-book table view ---------- */
   #view-table { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
 
-  /* ---------- Column header ---------- */
   .thead {
     display: grid; grid-template-columns: 1fr 1fr;
     padding: 4px 10px; font-size: 11px; font-weight: 600;
@@ -59,7 +88,6 @@
   }
   .thead span.word { cursor: pointer; }
 
-  /* ---------- Table body ---------- */
   #list { flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; }
   .row {
     display: grid; grid-template-columns: 1fr 1fr;
@@ -74,6 +102,10 @@
     white-space: pre-wrap; line-height: 1.4; border-left: 1px solid var(--border); padding-left: 8px;
   }
   .row.selected .explanation { color: var(--vscode-list-activeSelectionForeground, #fff); opacity: 0.9; }
+  .row mark {
+    background: var(--highlight); color: inherit; border-radius: 2px; padding: 0 1px;
+  }
+  .row.selected mark { background: rgba(255, 255, 255, 0.3); }
 
   /* ---------- Empty state ---------- */
   #empty {
@@ -105,7 +137,7 @@
   .btn:hover { opacity: 0.9; }
   .btn.secondary { background: transparent; border: 1px solid var(--border); color: var(--fg); }
 
-  /* ---------- Provider dropdown (select with icons) ---------- */
+  /* ---------- Provider dropdown ---------- */
   .psel { position: relative; }
   .psel-btn {
     width: 100%; display: flex; align-items: center; gap: 8px;
@@ -119,9 +151,8 @@
   .psel-btn .psel-chev { opacity: 0.7; }
   .psel-menu {
     display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 200;
-    background: var(--vscode-menu-background, #252526);
-    color: var(--vscode-menu-foreground, #cccccc);
-    border: 1px solid var(--vscode-menu-border, #454545); border-radius: 4px;
+    background: var(--menu-bg); color: var(--menu-fg);
+    border: 1px solid var(--menu-border); border-radius: 4px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.4); padding: 3px 0; margin-top: 2px;
   }
   .psel.open .psel-menu { display: block; }
@@ -129,29 +160,76 @@
     display: flex; align-items: center; gap: 8px;
     padding: 5px 10px; cursor: pointer; font-size: 12px;
   }
-  .psel-item:hover { background: var(--vscode-menu-selectionBackground, #094771); color: var(--vscode-menu-selectionForeground, #fff); }
+  .psel-item:hover { background: var(--menu-selection-bg); color: var(--menu-selection-fg); }
   .psel-item.selected { font-weight: 600; }
 
-  /* ---------- Context menu ---------- */
-  #ctxmenu {
-    position: fixed; z-index: 1000; min-width: 140px;
-    background: var(--vscode-menu-background, #252526);
-    color: var(--vscode-menu-foreground, #cccccc);
-    border: 1px solid var(--vscode-menu-border, #454545); border-radius: 4px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.4); padding: 4px 0; display: none;
+  /* ---------- Dropdown menu (toolbar "more" button) ---------- */
+  .dropdown {
+    position: absolute; z-index: 1000; min-width: 200px;
+    background: var(--menu-bg); color: var(--menu-fg);
+    border: 1px solid var(--menu-border); border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    padding: 4px 0; display: none;
   }
-  #ctxmenu .item {
-    padding: 5px 14px; cursor: pointer; font-size: 12px;
+  .dropdown.visible { display: block; }
+  .dropdown .item {
+    padding: 6px 14px; cursor: pointer; font-size: 13px;
+    display: flex; align-items: center; gap: 10px;
+    position: relative;
+  }
+  .dropdown .item:hover { background: var(--menu-selection-bg); color: var(--menu-selection-fg); }
+  .dropdown .item .item-label { flex: 1; }
+  .dropdown .item .item-shortcut {
+    font-size: 11px; color: var(--muted); opacity: 0.8;
+  }
+  .dropdown .item:hover .item-shortcut { color: inherit; }
+  .dropdown .item .item-caret {
+    font-size: 9px; opacity: 0.5; margin-left: 8px;
+    transition: transform 0.15s ease, opacity 0.15s ease;
+  }
+  .dropdown .item.has-submenu:hover .item-caret {
+    opacity: 1;
+  }
+  .dropdown .item .item-icon { color: var(--muted); }
+  .dropdown .item:hover .item-icon { color: inherit; }
+  .dropdown .sep {
+    height: 1px; background: var(--menu-separator); margin: 4px 0;
+  }
+
+  /* "More" button — three dots text label */
+  .toolbar #moreBtn {
+    font-size: 14px; font-weight: 700; line-height: 1;
+    padding: 2px 6px 4px; letter-spacing: 1px;
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 24px;
+  }
+
+  /* Submenu for export format (right-side flyout) */
+  .dropdown .submenu {
+    position: absolute; top: 0;
+    min-width: 200px;
+    background: var(--menu-bg); color: var(--menu-fg);
+    border: 1px solid var(--menu-border); border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    padding: 4px 0; display: none;
+  }
+  .dropdown .item.has-submenu:hover > .submenu { display: block; }
+  .dropdown .submenu .sub-item {
+    padding: 6px 14px; cursor: pointer; font-size: 13px;
     display: flex; align-items: center; gap: 8px;
   }
-  #ctxmenu .item:hover { background: var(--vscode-menu-selectionBackground, #094771); color: var(--vscode-menu-selectionForeground, #fff); }
-  #ctxmenu .item .ic { width: 13px; height: 13px; }
-  #ctxmenu .sep { height: 1px; background: var(--vscode-menu-separatorBackground, #454545); margin: 4px 6px; }
+  .dropdown .submenu .sub-item:hover {
+    background: var(--menu-selection-bg); color: var(--menu-selection-fg);
+  }
+  .dropdown .submenu .sub-item .sub-desc {
+    font-size: 11px; color: var(--muted); opacity: 0.8;
+    margin-left: auto;
+  }
+  .dropdown .submenu .sub-item:hover .sub-desc { color: inherit; }
 </style>
 </head>
 <body>
-  <!-- Inline SVG icon sprite. currentColor adapts to light/dark theme automatically;
-       engine logos keep their brand colors. -->
+  <!-- Inline SVG icon sprite -->
   <svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute;overflow:hidden" aria-hidden="true">
     <defs>
       <symbol id="i-sort" viewBox="0 0 16 16">
@@ -166,6 +244,27 @@
       <symbol id="i-gear" viewBox="0 0 16 16">
         <path fill="currentColor" fill-rule="evenodd" d="M7.06.63l.7-.01c.13 0 .24.05.32.15l.35 1.03c.24.09.46.2.67.32l1.05-.5c.13-.06.27-.04.37.06l.98.98c.1.1.12.24.06.37l-.5 1.05c.12.21.23.43.32.67l1.03.35c.1.08.15.19.15.32v1.4c0 .13-.05.24-.15.32l-1.03.35c-.09.24-.2.46-.32.67l.5 1.05c.06.13.04.27-.06.37l-.98.98a.33.33 0 0 1-.37.06l-1.05-.5c-.21.12-.43.23-.67.32l-.35 1.03a.33.33 0 0 1-.32.15h-1.4a.33.33 0 0 1-.32-.15l-.35-1.03a4.4 4.4 0 0 1-.67-.32l-1.05.5a.33.33 0 0 1-.37-.06l-.98-.98a.33.33 0 0 1-.06-.37l.5-1.05a4.4 4.4 0 0 1-.32-.67l-1.03-.35a.33.33 0 0 1-.15-.32V6.37c0-.13.05-.24.15-.32l1.03-.35c.09-.24.2-.46.32-.67l-.5-1.05a.33.33 0 0 1 .06-.37l.98-.98c.1-.1.24-.12.37-.06l1.05.5c.21-.11.43-.23.67-.32l.35-1.03A.33.33 0 0 1 7.06.63zM8 5a3 3 0 1 0 0 6 3 3 0 0 0 0-6zm0 1.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z"/>
       </symbol>
+      <symbol id="i-more" viewBox="0 0 16 16">
+        <circle cx="3" cy="8" r="1.5" fill="currentColor"/>
+        <circle cx="8" cy="8" r="1.5" fill="currentColor"/>
+        <circle cx="13" cy="8" r="1.5" fill="currentColor"/>
+      </symbol>
+      <symbol id="i-search" viewBox="0 0 16 16">
+        <circle cx="6.5" cy="6.5" r="5" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </symbol>
+      <symbol id="i-import" viewBox="0 0 16 16">
+        <path fill="currentColor" fill-rule="evenodd" d="M8 15a.5.5 0 0 1-.5-.5V7.7L5.35 9.85a.5.5 0 1 1-.7-.7l3-3a.5.5 0 0 1 .7 0l3 3a.5.5 0 1 1-.7.7L8.5 7.7v6.8a.5.5 0 0 1-.5.5zM2.5 6a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-3a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/>
+      </symbol>
+      <symbol id="i-export" viewBox="0 0 16 16">
+        <path fill="currentColor" fill-rule="evenodd" d="M8 1a.5.5 0 0 1 .5.5v6.8l2.15-2.15a.5.5 0 0 1 .7.7l-3 3a.5.5 0 0 1-.7 0l-3-3a.5.5 0 1 1 .7-.7L7.5 8.3V1.5A.5.5 0 0 1 8 1zM2.5 10a.5.5 0 0 1 .5.5v2.5h10V10.5a.5.5 0 0 1 1 0v3a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-3a.5.5 0 0 1 .5-.5z"/>
+      </symbol>
+      <symbol id="i-close" viewBox="0 0 16 16">
+        <path d="M4 4l8 8M12 4L4 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </symbol>
+      <symbol id="i-view" viewBox="0 0 16 16">
+        <path fill="currentColor" d="M8 3C4 3 1.5 6 1 8c.5 2 3 5 7 5s6.5-3 7-5c-.5-2-3-5-7-5zm0 7a2 2 0 1 1 0-4 2 2 0 0 1 0 4z"/>
+      </symbol>
       <symbol id="i-star" viewBox="0 0 16 16">
         <path fill="currentColor" d="M8 1.3l1.85 3.75 4.14.6-3 2.92.71 4.13L8 11.07l-3.7 1.95.71-4.13-3-2.93 4.14-.6z"/>
       </symbol>
@@ -178,11 +277,11 @@
       <symbol id="i-star-off" viewBox="0 0 16 16">
         <path fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" d="M8 1.6l1.85 3.75 4.14.6-3 2.92.71 4.13L8 11.37l-3.7 1.63.71-4.13-3-2.92 4.14-.6z"/>
       </symbol>
-      <!-- Engine brand icons (same art as media/icons/engines/*.svg) -->
+      <!-- Engine brand icons -->
       <symbol id="i-engine-google" viewBox="0 0 16 16">
         <path fill="#fbbb00" d="M4.66,9.25l-.42,1.56-1.52,0A5.9,5.9,0,0,1,2,8a6,6,0,0,1,.67-2.76h0L4,5.49l.6,1.35A3.41,3.41,0,0,0,4.43,8,3.47,3.47,0,0,0,4.66,9.25Z"/>
-        <path fill="#518ef8" d="M13.9,6.88A6.86,6.86,0,0,1,14,8a6.38,6.38,0,0,1-.13,1.25,6,6,0,0,1-2.11,3.43h0L10,12.59,9.8,11.08a3.6,3.6,0,0,0,1.54-1.83H8.13V6.88H13.9Z"/>
-        <path fill="#28b446" d="M11.76,12.68h0a6,6,0,0,1-9-1.84L4.66,9.25A3.56,3.56,0,0,0,9.8,11.08Z"/>
+        <path fill="#518ef8" d="M13.9,6.88A6.86,6.86,0,0,1,14,8a6.38,6.38,0,0,1-.13,1.25,6,6,0,0,1-2.11,3.43h0L10,12.59,9.8,11.08a3.6,3.6 0 0 0 1.54-1.83H8.13V6.88H13.9Z"/>
+        <path fill="#28b446" d="M11.76,12.68h0a6,6,0,0,1-9-1.84L4.66,9.25A3.56,3.56,0,0,0 9.8,11.08Z"/>
         <path fill="#f14336" d="M11.83,3.38,9.89,5A3.57,3.57,0,0,0,4.63,6.84l-2-1.6h0a6,6,0,0,1,9.16-1.86Z"/>
       </symbol>
       <symbol id="i-engine-microsoft" viewBox="0 0 16 16">
@@ -202,15 +301,51 @@
       <svg class="ic use-stroke"><use href="#i-sort"></use></svg>
       <span class="sort-label" id="sortLabel">时间</span>
     </button>
-    <button id="wordOfDay" title="每日一词">
-      <svg class="ic use-fill"><use href="#i-lightbulb"></use></svg>
-    </button>
+    <div class="spacer"></div>
     <button id="refresh" title="刷新">
       <svg class="ic use-stroke"><use href="#i-refresh"></use></svg>
+    </button>
+    <button id="wordOfDay" title="每日一词">
+      <svg class="ic use-fill"><use href="#i-lightbulb"></use></svg>
     </button>
     <button id="settings" title="设置">
       <svg class="ic use-fill"><use href="#i-gear"></use></svg>
     </button>
+    <button id="moreBtn" title="更多选项">⋯</button>
+  </div>
+
+  <!-- Search bar -->
+  <div class="searchbar" id="searchbar">
+    <svg class="ic use-stroke"><use href="#i-search"></use></svg>
+    <input type="text" id="searchInput" placeholder="搜索单词或释义...">
+    <span class="count" id="searchCount"></span>
+    <button class="close-btn" id="searchClose" title="关闭搜索">
+      <svg class="ic use-stroke"><use href="#i-close"></use></svg>
+    </button>
+  </div>
+
+  <!-- More dropdown menu -->
+  <div class="dropdown" id="moreMenu">
+    <div class="item" id="menuImport" data-action="import">
+      <svg class="ic use-fill item-icon"><use href="#i-import"></use></svg>
+      <span class="item-label">导入</span>
+    </div>
+    <div class="item has-submenu" id="menuExport">
+      <svg class="ic use-fill item-icon"><use href="#i-export"></use></svg>
+      <span class="item-label">导出</span>
+      <span class="item-caret">▶</span>
+      <div class="submenu">
+        <div class="sub-item" data-action="export-json">JSON 格式<span class="sub-desc">完整数据</span></div>
+        <div class="sub-item" data-action="export-txt">TXT 格式<span class="sub-desc">单词+释义</span></div>
+        <div class="sub-item" data-action="export-xml">XML 格式<span class="sub-desc">结构化</span></div>
+      </div>
+    </div>
+    <div class="sep"></div>
+    <div class="item" id="menuSearch">
+      <svg class="ic use-stroke item-icon"><use href="#i-search"></use></svg>
+      <span class="item-label">快速搜索</span>
+      <span class="item-shortcut">Ctrl+F</span>
+    </div>
   </div>
 
   <div id="view-table">
@@ -278,14 +413,16 @@
     const $ = (id) => document.getElementById(id);
     let entries = [];
     let selectedId = null;
-    let menuVisible = false;
+    let ctxMenuVisible = false;
     let sortMode = 'time'; // 'time' | 'asc' | 'desc'
+    let searchQuery = '';
 
     // ---- Toolbar buttons ----
     $('refresh').addEventListener('click', () => vscode.postMessage({ type: 'refresh' }));
     $('wordOfDay').addEventListener('click', () => vscode.postMessage({ type: 'command', command: 'translation.wordOfDay' }));
     $('openDialogLink').addEventListener('click', () => vscode.postMessage({ type: 'command', command: 'translation.showDialog' }));
 
+    // ---- Sort toggle ----
     $('sortBtn').addEventListener('click', () => {
       sortMode = sortMode === 'time' ? 'asc' : sortMode === 'asc' ? 'desc' : 'time';
       render();
@@ -296,13 +433,11 @@
     });
 
     // ---- Settings toggle ----
-    // NOTE: #view-table is `display:flex; flex-direction:column` in CSS.
-    // Restoring with '' falls back to that rule; setting 'flex' here without
-    // a direction would lay the header/rows out side by side.
     function showSettings(show) {
       $('view-settings').style.display = show ? 'block' : 'none';
       $('view-table').style.display = show ? 'none' : '';
       $('settings').classList.toggle('active', show);
+      hideMoreMenu();
     }
     $('settings').addEventListener('click', () => {
       const visible = $('view-settings').style.display !== 'none';
@@ -329,6 +464,163 @@
         'openai.apiKey': $('s-apiKey').value,
       };
     }
+
+    // ---- More dropdown menu ----
+    const moreBtn = $('moreBtn');
+    const moreMenu = $('moreMenu');
+
+    function showMoreMenu() {
+      // Make menu visible first so we can measure it.
+      moreMenu.style.visibility = 'hidden';
+      moreMenu.classList.add('visible');
+
+      const btnRect = moreBtn.getBoundingClientRect();
+      const menuW = moreMenu.offsetWidth;
+      const menuH = moreMenu.offsetHeight;
+      const viewW = window.innerWidth;
+      const viewH = window.innerHeight;
+
+      // Horizontal: right-align to button, clamp to viewport.
+      let left = btnRect.right - menuW - 4;
+      if (left < 4) left = 4;
+      if (left + menuW > viewW - 4) left = viewW - menuW - 4;
+
+      // Vertical: below button, clamp to viewport.
+      let top = btnRect.bottom + 2;
+      if (top + menuH > viewH - 4) {
+        top = btnRect.top - menuH - 2;
+        if (top < 4) top = 4;
+      }
+
+      moreMenu.style.left = left + 'px';
+      moreMenu.style.top = top + 'px';
+      moreMenu.style.visibility = 'visible';
+
+      // Position submenus (flyout) — check if there's room on the right.
+      const submenus = moreMenu.querySelectorAll('.submenu');
+      submenus.forEach((sub) => {
+        const parent = sub.parentElement;
+        const parentRect = parent.getBoundingClientRect();
+        const subW = sub.offsetWidth || 200;
+        // Try right side first.
+        if (parentRect.right + subW + 4 < viewW) {
+          sub.style.left = '100%';
+          sub.style.right = 'auto';
+          sub.style.marginLeft = '2px';
+        } else {
+          // Not enough room — show on the left.
+          sub.style.left = 'auto';
+          sub.style.right = '100%';
+          sub.style.marginRight = '2px';
+        }
+        // Vertical align with parent.
+        sub.style.top = '-5px';
+      });
+    }
+
+    function hideMoreMenu() {
+      moreMenu.classList.remove('visible');
+      moreMenu.style.visibility = '';
+    }
+
+    moreBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (moreMenu.classList.contains('visible')) {
+        hideMoreMenu();
+      } else {
+        showMoreMenu();
+      }
+    });
+
+    // Menu action handlers — submenu items (export)
+    moreMenu.querySelectorAll('.sub-item').forEach((item) => {
+      item.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const action = item.dataset.action;
+        hideMoreMenu();
+        handleMenuAction(action);
+      });
+    });
+
+    // Direct menu items (import, search, etc.)
+    moreMenu.querySelectorAll('.item[data-action]').forEach((item) => {
+      item.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const action = item.dataset.action;
+        hideMoreMenu();
+        handleMenuAction(action);
+      });
+    });
+
+    $('menuSearch').addEventListener('click', () => {
+      hideMoreMenu();
+      toggleSearch(true);
+    });
+
+    function handleMenuAction(action) {
+      switch (action) {
+        case 'import':
+          vscode.postMessage({ type: 'command', command: 'translation.wordbook.import' });
+          break;
+        case 'export-json':
+          vscode.postMessage({ type: 'command', command: 'translation.wordbook.exportJson' });
+          break;
+        case 'export-txt':
+          vscode.postMessage({ type: 'command', command: 'translation.wordbook.exportTxt' });
+          break;
+        case 'export-xml':
+          vscode.postMessage({ type: 'command', command: 'translation.wordbook.exportXml' });
+          break;
+      }
+    }
+
+    // Close menu on outside click
+    document.addEventListener('click', (e) => {
+      if (!moreMenu.contains(e.target) && e.target !== moreBtn && !moreBtn.contains(e.target)) {
+        hideMoreMenu();
+      }
+      if (ctxMenuVisible && !e.target.closest('#ctxmenu')) hideCtxMenu();
+    });
+    window.addEventListener('blur', () => { hideMoreMenu(); hideCtxMenu(); });
+
+    // ---- Search ----
+    const searchbar = $('searchbar');
+    const searchInput = $('searchInput');
+    const searchCount = $('searchCount');
+
+    function toggleSearch(show) {
+      searchbar.classList.toggle('visible', show);
+      if (show) {
+        searchInput.focus();
+        searchInput.select();
+      } else {
+        searchQuery = '';
+        searchInput.value = '';
+        searchCount.textContent = '';
+        render();
+      }
+    }
+
+    $('searchClose').addEventListener('click', () => toggleSearch(false));
+
+    searchInput.addEventListener('input', () => {
+      searchQuery = searchInput.value.trim().toLowerCase();
+      render();
+    });
+
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        toggleSearch(false);
+      }
+    });
+
+    // Keyboard shortcut: Ctrl+F to search
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault();
+        toggleSearch(true);
+      }
+    });
 
     // ---- Provider dropdown (icon select) ----
     function initPsel(id) {
@@ -357,7 +649,6 @@
       const itemUse = item.querySelector('use').getAttribute('href');
       const btnUse = el.querySelector('.psel-ic use');
       btnUse.setAttribute('href', itemUse);
-      // keep the fill-mode class of the chosen item's icon
       const btnIcon = el.querySelector('.psel-ic');
       const itemIcon = item.querySelector('.ic');
       btnIcon.className = itemIcon.className.replace(/\bic\b/, 'ic psel-ic');
@@ -377,12 +668,31 @@
       return '<svg class="ic ' + cls + '"><use href="#' + id + '"></use></svg>';
     }
 
-    function sorted() {
-      const list = [...entries];
-      if (sortMode === 'asc') list.sort((a, b) => a.original.localeCompare(b.original));
-      else if (sortMode === 'desc') list.sort((a, b) => b.original.localeCompare(a.original));
-      else list.sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
-      return list;
+    // Highlight matches in text (returns HTML)
+    function highlight(text, query) {
+      if (!query) return esc(text);
+      const safe = esc(text);
+      const lower = safe.toLowerCase();
+      const idx = lower.indexOf(query);
+      if (idx === -1) return safe;
+      return safe.slice(0, idx) + '<mark>' + safe.slice(idx, idx + query.length) + '</mark>' + safe.slice(idx + query.length);
+    }
+
+    function sorted(list) {
+      const arr = [...list];
+      if (sortMode === 'asc') arr.sort((a, b) => a.original.localeCompare(b.original));
+      else if (sortMode === 'desc') arr.sort((a, b) => b.original.localeCompare(a.original));
+      else arr.sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
+      return arr;
+    }
+
+    function filterBySearch(list) {
+      if (!searchQuery) return list;
+      return list.filter((e) => {
+        const word = (e.original || '').toLowerCase();
+        const trans = (e.translation || '').toLowerCase();
+        return word.includes(searchQuery) || trans.includes(searchQuery);
+      });
     }
 
     function render() {
@@ -392,32 +702,74 @@
 
       const list = $('list');
       const empty = $('empty');
+
+      const filtered = filterBySearch(entries);
+      const sortedList = sorted(filtered);
+
+      // Update search count
+      if (searchQuery) {
+        searchCount.textContent = `${sortedList.length} / ${entries.length}`;
+      } else {
+        searchCount.textContent = '';
+      }
+
       if (!entries || entries.length === 0) {
         list.style.display = 'none'; empty.style.display = 'flex'; return;
       }
+      if (sortedList.length === 0) {
+        list.style.display = 'none'; empty.style.display = 'flex';
+        empty.innerHTML = '没有找到匹配的单词。<br><a id="clearSearch">清除搜索</a>';
+        $('clearSearch').addEventListener('click', () => toggleSearch(false));
+        return;
+      }
+
       list.style.display = 'block'; empty.style.display = 'none';
       list.innerHTML = '';
-      for (const e of sorted()) {
+
+      let firstMatchId = null;
+      for (const e of sortedList) {
         const row = document.createElement('div');
         row.className = 'row' + (e.id === selectedId ? ' selected' : '');
         row.dataset.id = e.id;
         row.innerHTML =
-          '<div class="word">' + esc(e.original) + '</div>' +
-          '<div class="explanation">' + esc(e.translation || '') + '</div>';
+          '<div class="word">' + highlight(e.original, searchQuery) + '</div>' +
+          '<div class="explanation">' + highlight(e.translation || '', searchQuery) + '</div>';
         row.addEventListener('click', () => {
           selectedId = e.id; render();
           vscode.postMessage({ type: 'detail', entry: e });
         });
         row.addEventListener('contextmenu', (ev) => {
           ev.preventDefault(); selectedId = e.id; render();
-          showMenu(ev.clientX, ev.clientY, e);
+          showCtxMenu(ev.clientX, ev.clientY, e);
         });
         list.appendChild(row);
+
+        if (firstMatchId === null && searchQuery) {
+          const wordLower = (e.original || '').toLowerCase();
+          const transLower = (e.translation || '').toLowerCase();
+          if (wordLower.includes(searchQuery) || transLower.includes(searchQuery)) {
+            firstMatchId = e.id;
+          }
+        }
+      }
+
+      // Scroll to first match and highlight it when searching
+      if (searchQuery && firstMatchId) {
+        const firstRow = list.querySelector('.row[data-id="' + firstMatchId + '"]');
+        if (firstRow) {
+          firstRow.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+          if (!selectedId) {
+            selectedId = firstMatchId;
+            // Re-apply selected class
+            const rows = list.querySelectorAll('.row');
+            rows.forEach((r) => r.classList.toggle('selected', r.dataset.id === String(selectedId)));
+          }
+        }
       }
     }
 
     // ---- Context menu ----
-    function showMenu(x, y, entry) {
+    function showCtxMenu(x, y, entry) {
       const menu = $('ctxmenu');
       menu.innerHTML = '';
       const addItem = (iconId, iconCls, label, action) => {
@@ -425,7 +777,7 @@
         item.className = 'item';
         item.innerHTML = iconId ? iconSvg(iconId, iconCls) : '';
         item.appendChild(document.createTextNode(label));
-        item.addEventListener('click', () => { hideMenu(); action(); });
+        item.addEventListener('click', () => { hideCtxMenu(); action(); });
         menu.appendChild(item);
       };
       addItem('i-star', 'use-fill', '详情', () => vscode.postMessage({ type: 'detail', entry }));
@@ -437,11 +789,9 @@
       const rect = menu.getBoundingClientRect();
       menu.style.left = Math.min(x, window.innerWidth - rect.width - 4) + 'px';
       menu.style.top = Math.min(y, window.innerHeight - rect.height - 4) + 'px';
-      menuVisible = true;
+      ctxMenuVisible = true;
     }
-    function hideMenu() { $('ctxmenu').style.display = 'none'; menuVisible = false; }
-    document.addEventListener('click', (e) => { if (menuVisible && !e.target.closest('#ctxmenu')) hideMenu(); });
-    window.addEventListener('blur', hideMenu);
+    function hideCtxMenu() { $('ctxmenu').style.display = 'none'; ctxMenuVisible = false; }
 
     // ---- Messages from extension ----
     window.addEventListener('message', (event) => {

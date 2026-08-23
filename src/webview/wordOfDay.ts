@@ -4,6 +4,7 @@ import { WORD_LIST, WordItem } from '../words.js';
 import { Store } from '../store.js';
 import { speakText } from '../tts/index.js';
 import { describeError } from '../feedback.js';
+import { addWordToWordBook } from '../wordbookDb.js';
 
 let instance: WordOfDayPanel | undefined;
 
@@ -75,6 +76,28 @@ export class WordOfDayPanel extends BasePanel {
         const word = String(msg.word ?? '');
         try {
           await speakText({ text: word, lang: 'en' });
+        } catch (error) {
+          void vscode.window.showErrorMessage(describeError(error));
+        }
+        break;
+      }
+
+      case 'saveWord': {
+        const word = String(msg.word ?? '').trim();
+        const translation = String(msg.translation ?? '').trim();
+        if (!word) { break; }
+        try {
+          const ok = addWordToWordBook({
+            word,
+            sourceLanguage: 'en',
+            targetLanguage: 'zh-CN',
+            explanation: translation,
+          });
+          if (ok) {
+            void vscode.window.showInformationMessage(`已将 "${word}" 添加到生词本`);
+          } else {
+            void vscode.window.showWarningMessage(`"${word}" 已在生词本中或添加失败`);
+          }
         } catch (error) {
           void vscode.window.showErrorMessage(describeError(error));
         }

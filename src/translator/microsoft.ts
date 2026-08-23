@@ -3,7 +3,7 @@
  * (the same service behind bing.com/translator). No API key required.
  */
 
-import { TranslationError, Translator } from '../types.js';
+import { DictItem, Translation, TranslationError, Translator } from '../types.js';
 import { fromMicrosoftCode, toMicrosoftCode } from '../languages.js';
 
 const TRANSLATOR_PAGE = 'https://www.bing.com/translator';
@@ -63,13 +63,22 @@ async function getConfig(): Promise<BingConfig> {
   return configPromise;
 }
 
+// ---------------------------------------------------------------------------
+// Translation (ttranslatev3)
+// ---------------------------------------------------------------------------
+
+interface TranslationResult {
+  translation: string;
+  detectedLang?: string;
+  transliteration?: string;
+}
+
 async function callTranslate(
   text: string,
   fromLang: string,
   toLang: string,
-): Promise<{ translation: string; detectedLang?: string }> {
-  const config = await getConfig();
-
+  config: BingConfig,
+): Promise<TranslationResult> {
   const url =
     `https://${config.subdomain}.bing.com/ttranslatev3?isVertical=1&IG=${config.ig}&IID=${config.iid}`;
   const form = new URLSearchParams({
@@ -114,7 +123,7 @@ async function callTranslate(
 
   const json = (await res.json()) as {
     detectedLanguage?: { language: string };
-    translations?: { text: string; to?: string }[];
+    translations?: { text: string; to?: string; transliteration?: { text: string } }[];
   }[];
 
   const item = json[0];
@@ -126,8 +135,132 @@ async function callTranslate(
   return {
     translation,
     detectedLang: item?.detectedLanguage?.language,
+    transliteration: item?.translations?.[0]?.transliteration?.text,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Dictionary lookup (tlookupv3)
+// ---------------------------------------------------------------------------
+
+interface LookupTranslation {
+  displayTarget: string;
+  posTag: string;
+  confidence: number;
+  backTranslations?: { displayText: string }[];
+}
+
+interface LookupResult {
+  normalizedSource: string;
+  translations: LookupTranslation[];
+}
+
+/**
+ * Calls the Bing dictionary lookup endpoint.
+ * Returns dictionary entries grouped by part of speech, or undefined for
+ * sentences / phrases where no dictionary data is available.
+ */
+async function callLookup(
+  text: string,
+  fromLang: string,
+  toLang: string,
+  config: BingConfig,
+): Promise<DictItem[] | undefined> {
+  // Skip dictionary lookup for long text (sentences) to avoid wasted requests.
+  if (text.length > 80 || /\s/.test(text.trim())) {
+    return undefined;
+  }
+
+  const url =
+    `https://${config.subdomain}.bing.com/tlookupv3?isVertical=1&IG=${config.ig}&IID=${config.iid}`;
+  const form = new URLSearchParams({
+    from: fromLang,
+    to: toLang,
+    text,
+    token: config.token,
+    key: String(config.key),
+  });
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15000);
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'user-agent': UA,
+        referer: `https://${config.subdomain}.bing.com/translator`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: form.toString(),
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      return undefined;
+    }
+    const data = (await res.json()) as LookupResult[];
+    const item = data[0];
+    if (!item || !item.translations || item.translations.length === 0) {
+      return undefined;
+    }
+
+    // Group translations by part of speech, matching the DictItem format.
+    const posMap = new Map<string, { translation: string; backTranslations: string[] }[]>();
+    for (const t of item.translations) {
+      const pos = posTagToLabel(t.posTag);
+      if (!pos) {
+        continue;
+      }
+      const backTranslations = (t.backTranslations ?? [])
+        .map((b) => b.displayText)
+        .filter((s) => s && s.length > 0);
+      if (!posMap.has(pos)) {
+        posMap.set(pos, []);
+      }
+      posMap.get(pos)!.push({ translation: t.displayTarget, backTranslations });
+    }
+
+    if (posMap.size === 0) {
+      return undefined;
+    }
+
+    const dict: DictItem[] = [];
+    for (const [pos, entries] of posMap) {
+      dict.push({ pos, entries });
+    }
+    return dict;
+  } catch {
+    // Dictionary lookup failure should not break the translation.
+    return undefined;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Maps Bing's posTag (e.g. "NOUN", "VERB") to a human-readable label. */
+function posTagToLabel(posTag: string): string | undefined {
+  switch (posTag) {
+    case 'NOUN': return '名词';
+    case 'VERB': return '动词';
+    case 'ADJ': return '形容词';
+    case 'ADV': return '副词';
+    case 'PRON': return '代词';
+    case 'PREP': return '介词';
+    case 'CONJ': return '连词';
+    case 'INTJ': return '感叹词';
+    case 'DET': return '限定词';
+    case 'NUM': return '数词';
+    case 'ADP': return '介词';
+    case 'AUX': return '助动词';
+    case 'SCONJ': return '连词';
+    case 'PART': return '助词';
+    case 'PROPN': return '专有名词';
+    default: return posTag ? posTag.toLowerCase() : undefined;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Translator implementation
+// ---------------------------------------------------------------------------
 
 export const MicrosoftTranslator: Translator = {
   id: 'microsoft',
@@ -137,16 +270,40 @@ export const MicrosoftTranslator: Translator = {
   supportedTargetLanguages: ['zh-CN', 'zh-TW', 'en', 'ja', 'ko', 'fr', 'de', 'es', 'pt', 'pt-BR', 'ru', 'it', 'nl', 'pl', 'tr', 'vi', 'th', 'id', 'ar', 'hi', 'he', 'sv', 'da', 'no', 'fi', 'cs', 'hu', 'ro', 'bg', 'uk', 'el', 'sk', 'hr', 'sl', 'lt', 'lv', 'et', 'fa', 'ur', 'bn', 'ta', 'te', 'ca', 'fil', 'sw', 'cy', 'af', 'sq', 'am', 'az', 'eu', 'be', 'bs', 'eo', 'ga', 'gl', 'ka', 'kk', 'km', 'lo', 'mk', 'mn', 'my', 'ne', 'pa', 'si', 'sr', 'so', 'uz', 'zu'],
 
   async translate(text, srcLang, targetLang) {
+    const config = await getConfig();
     const from = toMicrosoftCode(srcLang);
     const to = toMicrosoftCode(targetLang);
-    const { translation, detectedLang } = await callTranslate(text, from, to);
+
+    // The dictionary lookup endpoint requires an explicit source language
+    // (it does not support "auto" detection). So when the source language is
+    // auto, we run translation first to get the detected language, then use
+    // that for the dictionary lookup. Otherwise, both run in parallel.
+    let transResult: TranslationResult;
+    let dict: DictItem[] | undefined;
+
+    if (from === 'auto-detect' || !from) {
+      transResult = await callTranslate(text, from, to, config);
+      const detected = transResult.detectedLang;
+      if (detected) {
+        dict = await callLookup(text, detected, to, config);
+      }
+    } else {
+      [transResult, dict] = await Promise.all([
+        callTranslate(text, from, to, config),
+        callLookup(text, from, to, config),
+      ]);
+    }
+
+    const detectedLang = transResult.detectedLang;
 
     return {
       original: text,
-      translation: translation || text,
+      translation: transResult.translation || text,
       srcLang: detectedLang ? fromMicrosoftCode(detectedLang) : srcLang,
       targetLang,
       sourceLanguages: detectedLang ? [fromMicrosoftCode(detectedLang)] : [srcLang],
+      transliteration: transResult.transliteration ?? undefined,
+      dict: dict ?? undefined,
     };
   },
 };

@@ -24,6 +24,7 @@ const KEYS = {
   history: 'history',
   wordOfDayDate: 'wordOfDay.date',
   wordOfDayIndex: 'wordOfDay.index',
+  wordOfDayAutoShown: 'wordOfDay.autoShown',
   sourceLanguage: 'sourceLanguage',
   targetLanguage: 'targetLanguage',
 } as const;
@@ -119,6 +120,15 @@ export class Store {
   async setWordOfDayState(date: string, index: number): Promise<void> {
     await this.ctx.globalState.update(KEYS.wordOfDayDate, date);
     await this.ctx.globalState.update(KEYS.wordOfDayIndex, index);
+  }
+
+  /** Returns the date string of the last time the Word of the Day was auto-shown. */
+  getWordOfDayAutoShownDate(): string {
+    return this.ctx.globalState.get<string>(KEYS.wordOfDayAutoShown, '');
+  }
+
+  async setWordOfDayAutoShownDate(date: string): Promise<void> {
+    await this.ctx.globalState.update(KEYS.wordOfDayAutoShown, date);
   }
 
   // ---- Language prefs ----------------------------------------------------

@@ -50,6 +50,10 @@ export class Config {
     return this.get('hover.delay', 300);
   }
 
+  get hoverDocTranslation(): boolean {
+    return this.get('hover.docTranslation', true);
+  }
+
   get ttsEngine(): string {
     return this.get('ttsEngine', 'edge');
   }
@@ -87,6 +91,14 @@ export class Config {
 
   get showResultInNotification(): boolean {
     return this.get('notification.showResult', true);
+  }
+
+  get wordOfDayAutoShow(): boolean {
+    return this.get('wordOfDay.autoShow', true);
+  }
+
+  get wordOfDayAutoShowDelay(): number {
+    return this.get('wordOfDay.autoShowDelay', 5);
   }
 
   /** Retrieves the API key for an engine, stored in the OS secret storage. */

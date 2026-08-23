@@ -12,7 +12,7 @@ import { Store, WordBookEntry } from './store.js';
 import { speakText } from './tts/index.js';
 import { describeError, log, logError, runWithProgress } from './feedback.js';
 import { WordDetailsPanel } from './webview/wordDetails.js';
-import { exportWordBook, importWordBook } from './wordbookImportExport.js';
+import { exportWordBook, importWordBook, exportWordBookJson, exportWordBookTxt, exportWordBookXml, importWordBookAuto } from './wordbookImportExport.js';
 import { setActiveEngine } from './translator/registry.js';
 import { updateStatusBar } from './statusbar.js';
 
@@ -201,6 +201,9 @@ export function registerWordBookView(context: vscode.ExtensionContext): void {
       WordDetailsPanel.show(context, entry);
     }),
     vscode.commands.registerCommand('translation.wordbook.export', () => exportWordBook()),
-    vscode.commands.registerCommand('translation.wordbook.import', () => importWordBook()),
+    vscode.commands.registerCommand('translation.wordbook.import', () => importWordBookAuto()),
+    vscode.commands.registerCommand('translation.wordbook.exportJson', () => exportWordBookJson()),
+    vscode.commands.registerCommand('translation.wordbook.exportTxt', () => exportWordBookTxt()),
+    vscode.commands.registerCommand('translation.wordbook.exportXml', () => exportWordBookXml()),
   );
 }

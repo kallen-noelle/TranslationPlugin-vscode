@@ -55,6 +55,7 @@
     <div class="example-trans" id="exampleTrans"></div>
     <div class="actions">
       <button class="btn" id="speakBtn"><img class="icon" data-dark="{{MEDIA}}/icons/speech.svg" alt="speak">朗读</button>
+      <button class="btn secondary" id="saveBtn"><img class="icon" data-dark="{{MEDIA}}/icons/starOn.svg" alt="save">存到生词本</button>
       <button class="btn secondary" id="nextBtn">下一个</button>
     </div>
     <div class="date" id="date"></div>
@@ -72,6 +73,11 @@
     applyTheme();
     document.getElementById('speakBtn').addEventListener('click', () => {
       vscode.postMessage({ type: 'speak', word: document.getElementById('word').textContent });
+    });
+    document.getElementById('saveBtn').addEventListener('click', () => {
+      const word = document.getElementById('word').textContent || '';
+      const translation = document.getElementById('translation').textContent || '';
+      vscode.postMessage({ type: 'saveWord', word, translation });
     });
     document.getElementById('nextBtn').addEventListener('click', () => {
       vscode.postMessage({ type: 'next' });
