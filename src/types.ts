@@ -1,7 +1,6 @@
 /**
  * Core data types for the translation plugin.
  */
-
 /** A dictionary entry returned by Google / Microsoft. */
 export interface DictItem {
   /** Part of speech tag, e.g. "noun", "verb". */

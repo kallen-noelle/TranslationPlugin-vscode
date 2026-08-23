@@ -6,7 +6,7 @@ import { Config } from './config.js';
 import { getActiveEngine, getEngine, getActiveEngineId } from './translator/registry.js';
 import { HistoryEntry, Store } from './store.js';
 import { Translation, TranslationError } from './types.js';
-
+ 
 const cache = new Map<string, Translation>();
 
 function cacheKey(engineId: string, text: string, src: string, tgt: string): string {

@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'none'; img-src {{MEDIA}} data:; style-src 'unsafe-inline'; script-src 'unsafe-inline';">
+<style>
+  :root {
+    --bg: var(--vscode-sideBar-background, #252526);
+    --fg: var(--vscode-sideBar-foreground, #cccccc);
+    --border: var(--vscode-widget-border, #454545);
+    --row-hover: var(--vscode-list-hoverBackground, #2a2d2e);
+    --row-active: var(--vscode-list-activeSelectionBackground, #094771);
+    --muted: var(--vscode-descriptionForeground, #9d9d9d);
+    --input-bg: var(--vscode-input-background, #3c3c3c);
+    --input-fg: var(--vscode-input-foreground, #cccccc);
+    --input-border: var(--vscode-input-border, transparent);
+    --button-bg: var(--vscode-button-background, #0e639c);
+    --button-fg: var(--vscode-button-foreground, #ffffff);
+    --link: var(--vscode-textLink-foreground, #3794ff);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: var(--vscode-font-family, sans-serif);
+    font-size: 13px; color: var(--fg); background: var(--bg);
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+
+  /* ---------- Icon system (inline SVG, theme-adaptive) ---------- */
+  .ic { width: 15px; height: 15px; flex: 0 0 auto; display: block; }
+  .ic.use-fill { fill: currentColor; stroke: none; }
+  .ic.use-stroke { fill: none; stroke: currentColor; }
+
+  /* ---------- Top toolbar (like the original: sort on left, actions on right) ---------- */
+  .toolbar {
+    display: flex; align-items: center; gap: 2px;
+    padding: 3px 6px; border-bottom: 1px solid var(--border); flex: 0 0 auto;
+  }
+  .toolbar .spacer { flex: 1; }
+  .toolbar button {
+    background: transparent; border: none; border-radius: 4px;
+    padding: 3px 6px; cursor: pointer; color: var(--fg); line-height: 0;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .toolbar button:hover { background: var(--row-hover); }
+  .toolbar button.active { background: var(--row-active); }
+  .toolbar button .sort-label { font-size: 11px; color: var(--muted); line-height: 1; }
+
+  /* ---------- Word-book table view (column layout; settings toggle relies on it) ---------- */
+  #view-table { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+
+  /* ---------- Column header ---------- */
+  .thead {
+    display: grid; grid-template-columns: 1fr 1fr;
+    padding: 4px 10px; font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted);
+    border-bottom: 1px solid var(--border); flex: 0 0 auto; user-select: none;
+  }
+  .thead span.word { cursor: pointer; }
+
+  /* ---------- Table body ---------- */
+  #list { flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; }
+  .row {
+    display: grid; grid-template-columns: 1fr 1fr;
+    padding: 7px 10px; border-bottom: 1px solid var(--vscode-tree-indentGuidesStroke, rgba(128,128,128,0.2));
+    cursor: pointer; align-items: start;
+  }
+  .row:hover { background: var(--row-hover); }
+  .row.selected { background: var(--row-active); color: var(--vscode-list-activeSelectionForeground, #fff); }
+  .row .word { font-size: 14px; font-weight: 600; word-break: break-word; padding-right: 8px; }
+  .row .explanation {
+    font-size: 12px; color: var(--muted); word-break: break-word;
+    white-space: pre-wrap; line-height: 1.4; border-left: 1px solid var(--border); padding-left: 8px;
+  }
+  .row.selected .explanation { color: var(--vscode-list-activeSelectionForeground, #fff); opacity: 0.9; }
+
+  /* ---------- Empty state ---------- */
+  #empty {
+    flex: 1 1 auto; display: none; align-items: center; justify-content: center;
+    color: var(--muted); font-size: 13px; text-align: center; padding: 24px; line-height: 1.6;
+  }
+  #empty a { color: var(--link); cursor: pointer; }
+
+  /* ---------- Settings panel ---------- */
+  #view-settings { display: none; flex: 1 1 auto; overflow-y: auto; padding: 12px 14px; }
+  #view-settings h3 {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--muted); margin: 14px 0 6px;
+  }
+  #view-settings h3:first-child { margin-top: 0; }
+  .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+  .field label { font-size: 11px; color: var(--muted); }
+  .field select, .field input {
+    background: var(--input-bg); color: var(--input-fg);
+    border: 1px solid var(--input-border); border-radius: 2px;
+    padding: 5px 7px; font-size: 12px; font-family: inherit;
+  }
+  .field input[type="checkbox"] { width: auto; }
+  .settings-actions { display: flex; gap: 8px; margin-top: 14px; }
+  .btn {
+    background: var(--button-bg); color: var(--button-fg);
+    border: none; padding: 6px 16px; border-radius: 2px; cursor: pointer; font-size: 13px;
+  }
+  .btn:hover { opacity: 0.9; }
+  .btn.secondary { background: transparent; border: 1px solid var(--border); color: var(--fg); }
+
+  /* ---------- Provider dropdown (select with icons) ---------- */
+  .psel { position: relative; }
+  .psel-btn {
+    width: 100%; display: flex; align-items: center; gap: 8px;
+    background: var(--input-bg); color: var(--input-fg);
+    border: 1px solid var(--input-border); border-radius: 2px;
+    padding: 5px 7px; font-size: 12px; font-family: inherit;
+    cursor: pointer; text-align: left; line-height: 1;
+  }
+  .psel-btn:hover { border-color: var(--border); }
+  .psel-btn .psel-label { flex: 1; line-height: 1.2; }
+  .psel-btn .psel-chev { opacity: 0.7; }
+  .psel-menu {
+    display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 200;
+    background: var(--vscode-menu-background, #252526);
+    color: var(--vscode-menu-foreground, #cccccc);
+    border: 1px solid var(--vscode-menu-border, #454545); border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4); padding: 3px 0; margin-top: 2px;
+  }
+  .psel.open .psel-menu { display: block; }
+  .psel-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 5px 10px; cursor: pointer; font-size: 12px;
+  }
+  .psel-item:hover { background: var(--vscode-menu-selectionBackground, #094771); color: var(--vscode-menu-selectionForeground, #fff); }
+  .psel-item.selected { font-weight: 600; }
+
+  /* ---------- Context menu ---------- */
+  #ctxmenu {
+    position: fixed; z-index: 1000; min-width: 140px;
+    background: var(--vscode-menu-background, #252526);
+    color: var(--vscode-menu-foreground, #cccccc);
+    border: 1px solid var(--vscode-menu-border, #454545); border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4); padding: 4px 0; display: none;
+  }
+  #ctxmenu .item {
+    padding: 5px 14px; cursor: pointer; font-size: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  #ctxmenu .item:hover { background: var(--vscode-menu-selectionBackground, #094771); color: var(--vscode-menu-selectionForeground, #fff); }
+  #ctxmenu .item .ic { width: 13px; height: 13px; }
+  #ctxmenu .sep { height: 1px; background: var(--vscode-menu-separatorBackground, #454545); margin: 4px 6px; }
+</style>
+</head>
+<body>
+  <!-- Inline SVG icon sprite. currentColor adapts to light/dark theme automatically;
+       engine logos keep their brand colors. -->
+  <svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute;overflow:hidden" aria-hidden="true">
+    <defs>
+      <symbol id="i-sort" viewBox="0 0 16 16">
+        <path d="M4.5 6.5L8 10l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+      </symbol>
+      <symbol id="i-lightbulb" viewBox="0 0 16 16">
+        <path fill="currentColor" d="M8 1a4.5 4.5 0 0 0-2.6 8.16c.42.37.72.86.85 1.4.02.1.05.2.05.3h3.4c0-.1.03-.2.05-.3.13-.54.43-1.03.85-1.4A4.5 4.5 0 0 0 8 1zm0 1.5a3 3 0 0 1 1.78 5.42 3.7 3.7 0 0 0-1.16 2.08H7.38a3.7 3.7 0 0 0-1.16-2.08A3 3 0 0 1 8 2.5zM6.5 11.5h3a.55.55 0 1 1 0 1.1h-3a.55.55 0 1 1 0-1.1zm.6 1.85h1.8a.5.5 0 0 1 .15.02.45.45 0 0 1-.05.88H7a.45.45 0 0 1-.05-.88.5.5 0 0 1 .15-.02z"/>
+      </symbol>
+      <symbol id="i-refresh" viewBox="0 0 16 16">
+        <path d="M13.7 9.1A5.7 5.7 0 1 1 11.2 3.7 M13.6 2.3v3.4h-3.4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+      </symbol>
+      <symbol id="i-gear" viewBox="0 0 16 16">
+        <path fill="currentColor" fill-rule="evenodd" d="M7.06.63l.7-.01c.13 0 .24.05.32.15l.35 1.03c.24.09.46.2.67.32l1.05-.5c.13-.06.27-.04.37.06l.98.98c.1.1.12.24.06.37l-.5 1.05c.12.21.23.43.32.67l1.03.35c.1.08.15.19.15.32v1.4c0 .13-.05.24-.15.32l-1.03.35c-.09.24-.2.46-.32.67l.5 1.05c.06.13.04.27-.06.37l-.98.98a.33.33 0 0 1-.37.06l-1.05-.5c-.21.12-.43.23-.67.32l-.35 1.03a.33.33 0 0 1-.32.15h-1.4a.33.33 0 0 1-.32-.15l-.35-1.03a4.4 4.4 0 0 1-.67-.32l-1.05.5a.33.33 0 0 1-.37-.06l-.98-.98a.33.33 0 0 1-.06-.37l.5-1.05a4.4 4.4 0 0 1-.32-.67l-1.03-.35a.33.33 0 0 1-.15-.32V6.37c0-.13.05-.24.15-.32l1.03-.35c.09-.24.2-.46.32-.67l-.5-1.05a.33.33 0 0 1 .06-.37l.98-.98c.1-.1.24-.12.37-.06l1.05.5c.21-.11.43-.23.67-.32l.35-1.03A.33.33 0 0 1 7.06.63zM8 5a3 3 0 1 0 0 6 3 3 0 0 0 0-6zm0 1.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z"/>
+      </symbol>
+      <symbol id="i-star" viewBox="0 0 16 16">
+        <path fill="currentColor" d="M8 1.3l1.85 3.75 4.14.6-3 2.92.71 4.13L8 11.07l-3.7 1.95.71-4.13-3-2.93 4.14-.6z"/>
+      </symbol>
+      <symbol id="i-copy" viewBox="0 0 16 16">
+        <path fill="currentColor" fill-rule="evenodd" d="M5 2.5A1.5 1.5 0 0 1 6.5 1h4A1.5 1.5 0 0 1 12 2.5V3h.5A1.5 1.5 0 0 1 14 4.5v8A1.5 1.5 0 0 1 12.5 14h-6A1.5 1.5 0 0 1 5 12.5V12h-.5A1.5 1.5 0 0 1 3 10.5v-8A1.5 1.5 0 0 1 4.5 1H5zM4.5 2.5v8H5v-6A1.5 1.5 0 0 1 6.5 3H11v-.5a.5.5 0 0 0-.5-.5h-6a.5.5 0 0 0-.5.5zM6.5 4a.5.5 0 0 0-.5.5v8a.5.5 0 0 0 .5.5h6a.5.5 0 0 0 .5-.5v-8a.5.5 0 0 0-.5-.5z"/>
+      </symbol>
+      <symbol id="i-speech" viewBox="0 0 16 16">
+        <path fill="currentColor" fill-rule="evenodd" d="M8.5 1.5a.5.5 0 0 1 .8.4v12.2a.5.5 0 0 1-.8.4L5.6 12H3a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h2.6zM8.3 3.1 6 4.9v6.2l2.3 1.8zM11 5.3a.5.5 0 0 1 .7-.1 4.2 4.2 0 0 1 0 6.6.5.5 0 0 1-.6-.8 3.2 3.2 0 0 0 0-5 .5.5 0 0 1-.1-.7zm1.7-2a.5.5 0 0 1 .7-.1 7 7 0 0 1 0 9.6.5.5 0 1 1-.6-.8 6 6 0 0 0 0-8 .5.5 0 0 1-.1-.7z"/>
+      </symbol>
+      <symbol id="i-star-off" viewBox="0 0 16 16">
+        <path fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" d="M8 1.6l1.85 3.75 4.14.6-3 2.92.71 4.13L8 11.37l-3.7 1.63.71-4.13-3-2.92 4.14-.6z"/>
+      </symbol>
+      <!-- Engine brand icons (same art as media/icons/engines/*.svg) -->
+      <symbol id="i-engine-google" viewBox="0 0 16 16">
+        <path fill="#fbbb00" d="M4.66,9.25l-.42,1.56-1.52,0A5.9,5.9,0,0,1,2,8a6,6,0,0,1,.67-2.76h0L4,5.49l.6,1.35A3.41,3.41,0,0,0,4.43,8,3.47,3.47,0,0,0,4.66,9.25Z"/>
+        <path fill="#518ef8" d="M13.9,6.88A6.86,6.86,0,0,1,14,8a6.38,6.38,0,0,1-.13,1.25,6,6,0,0,1-2.11,3.43h0L10,12.59,9.8,11.08a3.6,3.6,0,0,0,1.54-1.83H8.13V6.88H13.9Z"/>
+        <path fill="#28b446" d="M11.76,12.68h0a6,6,0,0,1-9-1.84L4.66,9.25A3.56,3.56,0,0,0,9.8,11.08Z"/>
+        <path fill="#f14336" d="M11.83,3.38,9.89,5A3.57,3.57,0,0,0,4.63,6.84l-2-1.6h0a6,6,0,0,1,9.16-1.86Z"/>
+      </symbol>
+      <symbol id="i-engine-microsoft" viewBox="0 0 16 16">
+        <rect x="1" y="1" width="6.5" height="6.5" fill="#F25326"/>
+        <rect x="8.5" y="1" width="6.5" height="6.5" fill="#81BC0A"/>
+        <rect x="1" y="8.5" width="6.5" height="6.5" fill="#07A6F0"/>
+        <rect x="8.5" y="8.5" width="6.5" height="6.5" fill="#FFBA0F"/>
+      </symbol>
+      <symbol id="i-engine-openai" viewBox="0 0 16 16">
+        <path fill="currentColor" d="M14.08,6.71L14.08,6.71c0.32-0.97,0.21-2.03-0.3-2.91C13,2.46,11.44,1.77,9.93,2.09C9.25,1.33,8.28,0.9,7.26,0.9c-1.55,0-2.93,1-3.41,2.47c-1,0.21-1.86,0.83-2.36,1.72C0.7,6.44,0.88,8.13,1.92,9.29c-0.32,0.97-0.21,2.02,0.3,2.9C3,13.53,4.56,14.23,6.08,13.9c0.67,0.76,1.64,1.2,2.66,1.19c1.55,0,2.93-1,3.41-2.47c1-0.21,1.86-0.83,2.36-1.72C15.3,9.56,15.12,7.87,14.08,6.71z M10.66,2.94L10.66,2.94c0.95,0,1.83,0.51,2.31,1.33c0.31,0.54,0.42,1.17,0.32,1.78C13.27,6.04,13.23,6.02,13.21,6l-2.83-1.63c-0.14-0.08-0.32-0.08-0.47,0L6.6,6.28v-1.4L9.34,3.3C9.74,3.06,10.2,2.94,10.66,2.94z M8,6.38l1.39,0.81V8.8L8,9.61L6.6,8.8V7.19L8,6.38z M4.6,4.49c0-1.47,1.19-2.66,2.66-2.66v0l0,0c0.62,0,1.23,0.22,1.71,0.62C8.94,2.46,8.9,2.48,8.87,2.5L6.05,4.12C5.9,4.21,5.82,4.36,5.82,4.53v3.83L4.6,7.65V4.49z M2.29,5.56c0.31-0.54,0.8-0.95,1.38-1.17v0v3.36c0,0.17,0.09,0.32,0.23,0.4l3.31,1.91l-1.22,0.71L3.26,9.19C1.99,8.46,1.56,6.83,2.29,5.56z M3.03,11.73L3.03,11.73c-0.31-0.53-0.42-1.17-0.31-1.78C2.74,9.96,2.77,9.98,2.8,10l2.83,1.63c0.14,0.08,0.32,0.08,0.47,0L9.4,9.72v1.4L6.66,12.7C5.39,13.43,3.76,13,3.03,11.73z M11.41,11.51c0,1.47-1.19,2.66-2.66,2.66v0c-0.62,0-1.23-0.22-1.7-0.62c0.02-0.01,0.06-0.03,0.09-0.05l2.83-1.63c0.14-0.08,0.24-0.24,0.23-0.4l0-3.82l1.22,0.7V11.51z M13.71,10.43L13.71,10.43c-0.31,0.54-0.8,0.96-1.38,1.17V8.24c0-0.17-0.09-0.32-0.23-0.4L8.79,5.93l1.22-0.7l2.73,1.58C14.01,7.54,14.45,9.16,13.71,10.43z"/>
+      </symbol>
+    </defs>
+  </svg>
+
+  <div class="toolbar">
+    <button id="sortBtn" title="排序: 点击切换">
+      <svg class="ic use-stroke"><use href="#i-sort"></use></svg>
+      <span class="sort-label" id="sortLabel">时间</span>
+    </button>
+    <button id="wordOfDay" title="每日一词">
+      <svg class="ic use-fill"><use href="#i-lightbulb"></use></svg>
+    </button>
+    <button id="refresh" title="刷新">
+      <svg class="ic use-stroke"><use href="#i-refresh"></use></svg>
+    </button>
+    <button id="settings" title="设置">
+      <svg class="ic use-fill"><use href="#i-gear"></use></svg>
+    </button>
+  </div>
+
+  <div id="view-table">
+    <div class="thead"><span class="word" id="colWord">单词</span><span>释义</span></div>
+    <div id="list"></div>
+    <div id="empty">生词本为空。<br><a id="openDialogLink">打开翻译弹窗</a> 翻译后点「存词」即可收藏。</div>
+  </div>
+
+  <div id="view-settings">
+    <h3>翻译</h3>
+    <div class="field"><label>翻译引擎</label>
+      <div class="psel" id="s-defaultEngine" data-value="google">
+        <button type="button" class="psel-btn">
+          <svg class="ic psel-ic"><use href="#i-engine-google"></use></svg>
+          <span class="psel-label">Google Translate</span>
+          <svg class="ic psel-chev use-stroke"><use href="#i-sort"></use></svg>
+        </button>
+        <div class="psel-menu">
+          <div class="psel-item selected" data-value="google"><svg class="ic"><use href="#i-engine-google"></use></svg><span>Google Translate</span></div>
+          <div class="psel-item" data-value="microsoft"><svg class="ic"><use href="#i-engine-microsoft"></use></svg><span>Microsoft Translator</span></div>
+          <div class="psel-item" data-value="openai"><svg class="ic"><use href="#i-engine-openai"></use></svg><span>OpenAI</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="field"><label>源语言</label><select id="s-sourceLanguage"></select></div>
+    <div class="field"><label>目标语言</label><select id="s-targetLanguage"></select></div>
+    <div class="field"><label>替换为译文的命名风格</label>
+      <select id="s-replaceSeparator"><option value="original">原文</option><option value="camelCase">camelCase</option><option value="snake_case">snake_case</option><option value="PascalCase">PascalCase</option><option value="kebab-case">kebab-case</option></select></div>
+    <div class="field"><label><input type="checkbox" id="s-hover"> 悬停翻译</label></div>
+
+    <h3>朗读 (TTS)</h3>
+    <div class="field"><label>TTS 引擎</label>
+      <div class="psel" id="s-ttsEngine" data-value="edge">
+        <button type="button" class="psel-btn">
+          <svg class="ic psel-ic use-fill"><use href="#i-speech"></use></svg>
+          <span class="psel-label">Microsoft Edge TTS</span>
+          <svg class="ic psel-chev use-stroke"><use href="#i-sort"></use></svg>
+        </button>
+        <div class="psel-menu">
+          <div class="psel-item selected" data-value="edge"><svg class="ic use-fill"><use href="#i-speech"></use></svg><span>Microsoft Edge TTS</span></div>
+          <div class="psel-item" data-value="openai"><svg class="ic"><use href="#i-engine-openai"></use></svg><span>OpenAI TTS</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="field"><label>Edge 音色</label><input id="s-edgeVoice" placeholder="如 zh-CN-XiaoxiaoNeural,留空自动"></div>
+    <div class="field"><label>OpenAI 音色</label>
+      <select id="s-openAiVoice"><option value="alloy">alloy</option><option value="echo">echo</option><option value="fable">fable</option><option value="onyx">onyx</option><option value="nova">nova</option><option value="shimmer">shimmer</option></select></div>
+
+    <h3>OpenAI 兼容</h3>
+    <div class="field"><label>Base URL</label><input id="s-baseUrl" placeholder="https://api.openai.com"></div>
+    <div class="field"><label>模型</label><input id="s-model" placeholder="gpt-4o-mini"></div>
+    <div class="field"><label>API Key</label><input id="s-apiKey" type="password" placeholder="留空表示使用已保存的 Key"></div>
+
+    <div class="settings-actions">
+      <button class="btn" id="saveSettingsBtn">保存</button>
+      <button class="btn secondary" id="backBtn">返回</button>
+    </div>
+  </div>
+
+  <div id="ctxmenu"></div>
+
+<script>
+  (function () {
+    const vscode = acquireVsCodeApi();
+    const $ = (id) => document.getElementById(id);
+    let entries = [];
+    let selectedId = null;
+    let menuVisible = false;
+    let sortMode = 'time'; // 'time' | 'asc' | 'desc'
+
+    // ---- Toolbar buttons ----
+    $('refresh').addEventListener('click', () => vscode.postMessage({ type: 'refresh' }));
+    $('wordOfDay').addEventListener('click', () => vscode.postMessage({ type: 'command', command: 'translation.wordOfDay' }));
+    $('openDialogLink').addEventListener('click', () => vscode.postMessage({ type: 'command', command: 'translation.showDialog' }));
+
+    $('sortBtn').addEventListener('click', () => {
+      sortMode = sortMode === 'time' ? 'asc' : sortMode === 'asc' ? 'desc' : 'time';
+      render();
+    });
+    $('colWord').addEventListener('click', () => {
+      sortMode = sortMode === 'asc' ? 'desc' : 'asc';
+      render();
+    });
+
+    // ---- Settings toggle ----
+    // NOTE: #view-table is `display:flex; flex-direction:column` in CSS.
+    // Restoring with '' falls back to that rule; setting 'flex' here without
+    // a direction would lay the header/rows out side by side.
+    function showSettings(show) {
+      $('view-settings').style.display = show ? 'block' : 'none';
+      $('view-table').style.display = show ? 'none' : '';
+      $('settings').classList.toggle('active', show);
+    }
+    $('settings').addEventListener('click', () => {
+      const visible = $('view-settings').style.display !== 'none';
+      if (visible) { showSettings(false); }
+      else { vscode.postMessage({ type: 'getSettings' }); showSettings(true); }
+    });
+    $('backBtn').addEventListener('click', () => showSettings(false));
+    $('saveSettingsBtn').addEventListener('click', () => {
+      vscode.postMessage({ type: 'saveSettings', settings: collectSettings() });
+    });
+
+    function collectSettings() {
+      return {
+        defaultEngine: getPsel('s-defaultEngine'),
+        sourceLanguage: $('s-sourceLanguage').value,
+        targetLanguage: $('s-targetLanguage').value,
+        replaceSeparator: $('s-replaceSeparator').value,
+        'hover.enabled': $('s-hover').checked,
+        ttsEngine: getPsel('s-ttsEngine'),
+        'tts.edge.voice': $('s-edgeVoice').value,
+        'tts.openai.voice': $('s-openAiVoice').value,
+        'openai.baseUrl': $('s-baseUrl').value,
+        'openai.model': $('s-model').value,
+        'openai.apiKey': $('s-apiKey').value,
+      };
+    }
+
+    // ---- Provider dropdown (icon select) ----
+    function initPsel(id) {
+      const el = $(id);
+      const btn = el.querySelector('.psel-btn');
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        document.querySelectorAll('.psel.open').forEach((o) => { if (o !== el) o.classList.remove('open'); });
+        el.classList.toggle('open');
+      });
+      el.querySelectorAll('.psel-item').forEach((item) => {
+        item.addEventListener('click', (e) => {
+          e.stopPropagation();
+          setPsel(id, item.dataset.value);
+          el.classList.remove('open');
+        });
+      });
+      document.addEventListener('click', (e) => { if (!el.contains(e.target)) el.classList.remove('open'); });
+    }
+    function setPsel(id, value) {
+      const el = $(id);
+      const item = el.querySelector('.psel-item[data-value="' + value + '"]');
+      if (!item) return;
+      el.dataset.value = value;
+      el.querySelector('.psel-label').textContent = item.querySelector('span').textContent;
+      const itemUse = item.querySelector('use').getAttribute('href');
+      const btnUse = el.querySelector('.psel-ic use');
+      btnUse.setAttribute('href', itemUse);
+      // keep the fill-mode class of the chosen item's icon
+      const btnIcon = el.querySelector('.psel-ic');
+      const itemIcon = item.querySelector('.ic');
+      btnIcon.className = itemIcon.className.replace(/\bic\b/, 'ic psel-ic');
+      el.querySelectorAll('.psel-item').forEach((i) => i.classList.toggle('selected', i === item));
+    }
+    function getPsel(id) { return $(id).dataset.value || ''; }
+    initPsel('s-defaultEngine');
+    initPsel('s-ttsEngine');
+
+    function esc(s) {
+      return String(s ?? '').replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+      }[c]));
+    }
+
+    function iconSvg(id, cls) {
+      return '<svg class="ic ' + cls + '"><use href="#' + id + '"></use></svg>';
+    }
+
+    function sorted() {
+      const list = [...entries];
+      if (sortMode === 'asc') list.sort((a, b) => a.original.localeCompare(b.original));
+      else if (sortMode === 'desc') list.sort((a, b) => b.original.localeCompare(a.original));
+      else list.sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
+      return list;
+    }
+
+    function render() {
+      const label = sortMode === 'asc' ? 'A-Z' : sortMode === 'desc' ? 'Z-A' : '时间';
+      $('sortLabel').textContent = label;
+      $('sortBtn').title = '排序(当前: ' + label + ')';
+
+      const list = $('list');
+      const empty = $('empty');
+      if (!entries || entries.length === 0) {
+        list.style.display = 'none'; empty.style.display = 'flex'; return;
+      }
+      list.style.display = 'block'; empty.style.display = 'none';
+      list.innerHTML = '';
+      for (const e of sorted()) {
+        const row = document.createElement('div');
+        row.className = 'row' + (e.id === selectedId ? ' selected' : '');
+        row.dataset.id = e.id;
+        row.innerHTML =
+          '<div class="word">' + esc(e.original) + '</div>' +
+          '<div class="explanation">' + esc(e.translation || '') + '</div>';
+        row.addEventListener('click', () => {
+          selectedId = e.id; render();
+          vscode.postMessage({ type: 'detail', entry: e });
+        });
+        row.addEventListener('contextmenu', (ev) => {
+          ev.preventDefault(); selectedId = e.id; render();
+          showMenu(ev.clientX, ev.clientY, e);
+        });
+        list.appendChild(row);
+      }
+    }
+
+    // ---- Context menu ----
+    function showMenu(x, y, entry) {
+      const menu = $('ctxmenu');
+      menu.innerHTML = '';
+      const addItem = (iconId, iconCls, label, action) => {
+        const item = document.createElement('div');
+        item.className = 'item';
+        item.innerHTML = iconId ? iconSvg(iconId, iconCls) : '';
+        item.appendChild(document.createTextNode(label));
+        item.addEventListener('click', () => { hideMenu(); action(); });
+        menu.appendChild(item);
+      };
+      addItem('i-star', 'use-fill', '详情', () => vscode.postMessage({ type: 'detail', entry }));
+      addItem('i-copy', 'use-fill', '复制', () => vscode.postMessage({ type: 'copy', entry }));
+      addItem('i-speech', 'use-fill', '朗读', () => vscode.postMessage({ type: 'speak', entry }));
+      const sep = document.createElement('div'); sep.className = 'sep'; menu.appendChild(sep);
+      addItem('i-star-off', 'use-stroke', '删除', () => vscode.postMessage({ type: 'delete', entry }));
+      menu.style.display = 'block';
+      const rect = menu.getBoundingClientRect();
+      menu.style.left = Math.min(x, window.innerWidth - rect.width - 4) + 'px';
+      menu.style.top = Math.min(y, window.innerHeight - rect.height - 4) + 'px';
+      menuVisible = true;
+    }
+    function hideMenu() { $('ctxmenu').style.display = 'none'; menuVisible = false; }
+    document.addEventListener('click', (e) => { if (menuVisible && !e.target.closest('#ctxmenu')) hideMenu(); });
+    window.addEventListener('blur', hideMenu);
+
+    // ---- Messages from extension ----
+    window.addEventListener('message', (event) => {
+      const msg = event.data;
+      if (msg.type === 'entries') {
+        entries = msg.entries || [];
+        render();
+      } else if (msg.type === 'settings') {
+        fillSettings(msg.settings || {}, msg.apiKey || '');
+      } else if (msg.type === 'saved') {
+        showSettings(false);
+        vscode.postMessage({ type: 'getWords' });
+      }
+    });
+
+    // ---- Settings fill ----
+    function fillSettings(s, apiKey) {
+      setPsel('s-defaultEngine', s.defaultEngine || 'google');
+      $('s-sourceLanguage').value = s.sourceLanguage || 'auto';
+      $('s-targetLanguage').value = s.targetLanguage || 'zh-CN';
+      $('s-replaceSeparator').value = s.replaceSeparator || 'original';
+      $('s-hover').checked = !!s['hover.enabled'];
+      setPsel('s-ttsEngine', s.ttsEngine || 'edge');
+      $('s-edgeVoice').value = s['tts.edge.voice'] || '';
+      $('s-openAiVoice').value = s['tts.openai.voice'] || 'alloy';
+      $('s-baseUrl').value = s['openai.baseUrl'] || 'https://api.openai.com';
+      $('s-model').value = s['openai.model'] || 'gpt-4o-mini';
+      $('s-apiKey').value = '';
+      $('s-apiKey').placeholder = apiKey ? '已保存(****),输入以更新' : '未配置';
+    }
+
+    // Populate language selects.
+    function fillLanguages() {
+      const langOpts = (skipAuto) => {
+        const codes = ['auto','zh-CN','zh-TW','en','ja','ko','fr','de','es','pt','pt-BR','ru','it','nl','pl','tr','vi','th','id','ar','hi','he','sv','da','no','fi','cs','hu','ro','bg','uk','el','sk','hr','sl','lt','lv','et','fa','ur','bn','ta','te','ca','fil','sw','cy'];
+        return codes.filter((c) => !skipAuto || c !== 'auto')
+          .map((c) => '<option value="' + c + '">' + c + '</option>').join('');
+      };
+      $('s-sourceLanguage').innerHTML = langOpts(false);
+      $('s-targetLanguage').innerHTML = langOpts(true);
+    }
+    fillLanguages();
+
+    // Ask for the initial word list.
+    vscode.postMessage({ type: 'getWords' });
+  })();
+</script>
+</body>
+</html>

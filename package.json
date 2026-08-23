@@ -2,7 +2,7 @@
   "name": "translation-plugin-vscode",
   "displayName": "Translation",
   "description": "Translation plugin for Visual Studio Code. Multiple translation engines, TTS, word book, translation dialog and more.",
-  "version": "0.1.6",
+  "version": "0.1.10",
   "publisher": "translation-plugin",
   "license": "MIT",
   "type": "module",
@@ -64,24 +64,9 @@
         "icon": "$(refresh)"
       },
       {
-        "command": "translation.wordbook.speak",
-        "title": "朗读",
-        "icon": "$(play)"
-      },
-      {
         "command": "translation.wordbook.detail",
         "title": "详情",
         "icon": "$(open-preview)"
-      },
-      {
-        "command": "translation.wordbook.copy",
-        "title": "复制",
-        "icon": "$(copy)"
-      },
-      {
-        "command": "translation.wordbook.delete",
-        "title": "删除",
-        "icon": "$(trash)"
       },
       {
         "command": "translation.wordbook.export",
@@ -147,14 +132,14 @@
         {
           "id": "translation",
           "title": "Translation",
-          "icon": "media/icon.svg"
+          "icon": "media/icons/wordbook.svg"
         }
       ]
     },
     "views": {
       "translation": [
         {
-          "type": "tree",
+          "type": "webview",
           "id": "translation.wordbook",
           "name": "Word Book",
           "icon": "media/icons/wordbook.svg",
@@ -187,39 +172,7 @@
           "group": "translation@4"
         }
       ],
-      "view/item/context": [
-        {
-          "command": "translation.wordbook.detail",
-          "group": "inline@1",
-          "when": "view == translation.wordbook && viewItem == wordBookItem"
-        },
-        {
-          "command": "translation.wordbook.copy",
-          "group": "inline@2",
-          "when": "view == translation.wordbook && viewItem == wordBookItem"
-        },
-        {
-          "command": "translation.wordbook.delete",
-          "group": "inline@3",
-          "when": "view == translation.wordbook && viewItem == wordBookItem"
-        },
-        {
-          "command": "translation.wordbook.speak",
-          "group": "translation@1",
-          "when": "view == translation.wordbook && viewItem == wordBookItem"
-        }
-      ],
       "view/title": [
-        {
-          "command": "translation.wordbook.refresh",
-          "group": "navigation@1",
-          "when": "view == translation.wordbook"
-        },
-        {
-          "command": "translation.wordOfDay",
-          "group": "navigation@2",
-          "when": "view == translation.wordbook"
-        },
         {
           "command": "translation.switchEngine",
           "group": "settings@1",
