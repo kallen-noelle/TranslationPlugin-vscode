@@ -4,6 +4,7 @@
  */
 
 import { DictItem, Translation, TranslationError, Translator } from '../types.js';
+import { describeError } from '../feedback.js';
 import { fromMicrosoftCode, toMicrosoftCode } from '../languages.js';
 
 const TRANSLATOR_PAGE = 'https://www.bing.com/translator';
@@ -109,7 +110,7 @@ async function callTranslate(
       throw new TranslationError('Microsoft 翻译请求超时', 'microsoft', 'Microsoft Translator');
     }
     throw new TranslationError(
-      `Microsoft 翻译请求失败: ${error instanceof Error ? error.message : String(error)}`,
+      `Microsoft 翻译请求失败: ${describeError(error)}`,
       'microsoft',
       'Microsoft Translator',
     );

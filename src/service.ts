@@ -6,11 +6,12 @@ import { Config } from './config.js';
 import { getActiveEngine, getEngine, getActiveEngineId } from './translator/registry.js';
 import { HistoryEntry, Store } from './store.js';
 import { Translation, TranslationError } from './types.js';
- 
-const cache = new Map<string, Translation>();
+import { getDiskCache, putDiskCache } from './cacheService.js';
+
+const memoryCache = new Map<string, Translation>();
 
 function cacheKey(engineId: string, text: string, src: string, tgt: string): string {
-  return [engineId, src, tgt, text].join('');
+  return [engineId, src, tgt, text].join('');
 }
 
 /**
@@ -26,9 +27,15 @@ export async function translate(
   const engine = getEngine(id) ?? getActiveEngine();
   const key = cacheKey(engine.id, text, srcLang, targetLang);
 
-  const hit = cache.get(key);
-  if (hit) {
-    return hit;
+  const memHit = memoryCache.get(key);
+  if (memHit) {
+    return memHit;
+  }
+
+  const diskHit = getDiskCache(text, srcLang, targetLang, engine.id);
+  if (diskHit) {
+    memoryCache.set(key, diskHit);
+    return diskHit;
   }
 
   let result: Translation;
@@ -45,10 +52,11 @@ export async function translate(
     );
   }
 
-  cache.set(key, result);
-  if (cache.size > 2000) {
-    cache.clear();
+  memoryCache.set(key, result);
+  if (memoryCache.size > 2000) {
+    memoryCache.clear();
   }
+  putDiskCache(text, srcLang, targetLang, engine.id, result);
 
   const config = Config.get();
   const entry: HistoryEntry = {
@@ -66,7 +74,7 @@ export async function translate(
 
 /** Clears the in-memory translation cache. */
 export function clearCache(): void {
-  cache.clear();
+  memoryCache.clear();
 }
 
 /** Renders an error into a user-facing message. */

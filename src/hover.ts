@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { Config } from './config.js';
 import { translate } from './service.js';
-import { logError } from './feedback.js';
+import { logError, describeError } from './feedback.js';
 
 /** Guard to prevent recursive hover provider calls. */
 let inDocTranslateCall = false;
@@ -55,20 +55,29 @@ export function registerHoverProvider(): vscode.Disposable {
               : config.sourceLanguage;
             const result = await translate(word, srcLang, config.targetLanguage);
             const md = new vscode.MarkdownString();
-            md.appendMarkdown(`**${escapeMd(word)}** — *${escapeMd(result.translation ?? '')}*`);
+
+            // Main translation line
+            md.appendMarkdown(`**${escapeMd(word)}**`);
+            if (result.transliteration) {
+              md.appendMarkdown(`  *${escapeMd(result.transliteration)}*`);
+            }
+            md.appendMarkdown(`\n\n${escapeMd(result.translation ?? '')}`);
+
+            // Dictionary entries
             if (result.dict && result.dict.length > 0) {
               md.appendMarkdown('\n\n---\n');
-              for (const d of result.dict.slice(0, 3)) {
-                const term = d.term ? `**${escapeMd(d.term)}**` : '';
+              for (const d of result.dict.slice(0, 4)) {
+                const pos = d.pos ? `*${escapeMd(d.pos)}* ` : '';
+                const term = d.term ? `**${escapeMd(d.term)}** ` : '';
                 const entries = (d.entries ?? [])
-                  .slice(0, 5)
+                  .slice(0, 6)
                   .map((e) => escapeMd(e.translation))
                   .join('; ');
-                md.appendMarkdown(`\n*${escapeMd(d.pos ?? '')}* ${term} ${entries}`);
+                md.appendMarkdown(`\n${pos}${term}${entries}`);
               }
             }
 
-            // Action links with codicons
+            // Action links
             const translation = result.translation ?? '';
             const resultSrcLang = result.srcLang || srcLang;
             const resultTargetLang = result.targetLang || config.targetLanguage;
@@ -90,13 +99,10 @@ export function registerHoverProvider(): vscode.Disposable {
 
             md.appendMarkdown('\n\n---\n');
             md.appendMarkdown(
-              `[$(unmute) 朗读](command:translation.hover.speak?${speakArgs} "朗读单词")` +
-              ` &nbsp;|&nbsp; ` +
-              `[$(star-full) 收藏](command:translation.hover.save?${saveArgs} "加入生词本")` +
-              ` &nbsp;|&nbsp; ` +
-              `[$(clippy) 复制](command:translation.hover.copy?${copyArgs} "复制译文")` +
-              ` &nbsp;|&nbsp; ` +
-              `[$(window) 弹窗](command:translation.hover.openDialog?${openDialogArgs} "打开翻译弹窗")`,
+              `[$(unmute)](command:translation.hover.speak?${speakArgs} "朗读") ` +
+              `[$(star-full)](command:translation.hover.save?${saveArgs} "收藏到生词本") ` +
+              `[$(clippy)](command:translation.hover.copy?${copyArgs} "复制译文") ` +
+              `[$(window)](command:translation.hover.openDialog?${openDialogArgs} "打开翻译弹窗")`,
             );
 
             md.supportThemeIcons = true;
@@ -104,7 +110,12 @@ export function registerHoverProvider(): vscode.Disposable {
             resolve(new vscode.Hover([md], wordRange));
           } catch (error) {
             logError(error);
-            resolve(null);
+            const errMd = new vscode.MarkdownString();
+            errMd.appendMarkdown(`$(error) **翻译失败**\n\n`);
+            errMd.appendMarkdown(escapeMd(describeError(error)));
+            errMd.supportThemeIcons = true;
+            errMd.isTrusted = true;
+            resolve(new vscode.Hover([errMd], wordRange));
           }
         }, delay);
       });
@@ -191,7 +202,12 @@ export function registerHoverProvider(): vscode.Disposable {
         return new vscode.Hover([md], wordRange);
       } catch (error) {
         logError(error);
-        return null;
+        const errMd = new vscode.MarkdownString();
+        errMd.appendMarkdown(`$(error) **文档翻译失败**\n\n`);
+        errMd.appendMarkdown(escapeMd(describeError(error)));
+        errMd.supportThemeIcons = true;
+        errMd.isTrusted = true;
+        return new vscode.Hover([errMd], wordRange);
       } finally {
         inDocTranslateCall = false;
       }

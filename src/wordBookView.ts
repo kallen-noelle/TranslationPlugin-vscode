@@ -13,8 +13,10 @@ import { speakText } from './tts/index.js';
 import { describeError, log, logError, runWithProgress } from './feedback.js';
 import { WordDetailsPanel } from './webview/wordDetails.js';
 import { exportWordBook, importWordBook, exportWordBookJson, exportWordBookTxt, exportWordBookXml, importWordBookAuto } from './wordbookImportExport.js';
+import { resolveWordBookPath } from './wordbookDb.js';
 import { setActiveEngine } from './translator/registry.js';
 import { updateStatusBar } from './statusbar.js';
+import { getDiskCacheSize, evictAllDiskCaches, formatByteSize } from './cacheService.js';
 
 interface WordBookMessage {
   type: string;
@@ -129,20 +131,72 @@ class WordBookWebviewProvider implements vscode.WebviewViewProvider {
         }
         break;
       }
+
+      case 'clearCache': {
+        evictAllDiskCaches();
+        this.post({ type: 'cacheCleared', cacheSize: formatByteSize(getDiskCacheSize()) });
+        void vscode.window.showInformationMessage('磁盘缓存已清除');
+        break;
+      }
+
+      case 'browseWordbookPath': {
+        const picked = await vscode.window.showOpenDialog({
+          canSelectFiles: false,
+          canSelectFolders: true,
+          canSelectMany: false,
+          title: '选择单词本存储路径',
+        });
+        if (picked && picked.length > 0) {
+          const p = picked[0].fsPath;
+          await vscode.workspace.getConfiguration('translation').update('wordbook.path', p, vscode.ConfigurationTarget.Global);
+          this.post({ type: 'wordbookPathChanged', path: resolveWordBookPath(p) });
+        }
+        break;
+      }
+
+      case 'clearHistory': {
+        await Store.get().clearHistory();
+        this.post({ type: 'historyCleared' });
+        void vscode.window.showInformationMessage('历史记录已清除');
+        break;
+      }
     }
   }
 
   private async sendSettings(): Promise<void> {
     const cfg = vscode.workspace.getConfiguration('translation');
     const apiKey = await Config.get().getApiKey('openai');
+    const cacheSize = this.getCacheSize();
     this.post({
       type: 'settings',
       settings: {
         defaultEngine: cfg.get('defaultEngine', 'google'),
+        mainLanguage: cfg.get('mainLanguage', 'zh-CN'),
         sourceLanguage: cfg.get('sourceLanguage', 'auto'),
         targetLanguage: cfg.get('targetLanguage', 'zh-CN'),
-        replaceSeparator: cfg.get('replaceSeparator', 'original'),
+        'font.family': cfg.get('font.family', ''),
+        'font.phonetic': cfg.get('font.phonetic', ''),
+        'textSelection.stripPunctuation': cfg.get('textSelection.stripPunctuation', false),
+        'textSelection.preserveFormat': cfg.get('textSelection.preserveFormat', false),
+        'textSelection.autoCapture': cfg.get('textSelection.autoCapture', false),
+        'textSelection.regexFilter': cfg.get('textSelection.regexFilter', ''),
         'hover.enabled': cfg.get('hover.enabled', true),
+        'hover.docTranslation': cfg.get('hover.docTranslation', true),
+        'popup.autoRead': cfg.get('popup.autoRead', 'none'),
+        'popup.position': cfg.get('popup.position', 'cursor'),
+        'popup.autoCopy': cfg.get('popup.autoCopy', false),
+        'replace.contextMenu': cfg.get('replace.contextMenu', true),
+        'replace.selectLanguageFirst': cfg.get('replace.selectLanguageFirst', false),
+        'replace.useLastLanguage': cfg.get('replace.useLastLanguage', false),
+        'replace.autoReplace': cfg.get('replace.autoReplace', false),
+        replaceSeparator: cfg.get('replaceSeparator', 'original'),
+        'wordOfDay.autoShow': cfg.get('wordOfDay.autoShow', true),
+        'wordOfDay.showDefinition': cfg.get('wordOfDay.showDefinition', true),
+        'wordbook.path': cfg.get('wordbook.path', ''),
+        'wordbook.resolvedPath': resolveWordBookPath(cfg.get('wordbook.path', '')),
+        'history.maxEntries': cfg.get('history.maxEntries', 100),
+        autoTranslateDocument: cfg.get('autoTranslateDocument', false),
+        contextMenuOnlyWithSelection: cfg.get('contextMenuOnlyWithSelection', true),
         ttsEngine: cfg.get('ttsEngine', 'edge'),
         'tts.edge.voice': cfg.get('tts.edge.voice', ''),
         'tts.edge.speed': cfg.get('tts.edge.speed', '0%'),
@@ -151,7 +205,12 @@ class WordBookWebviewProvider implements vscode.WebviewViewProvider {
         'openai.model': cfg.get('openai.model', 'gpt-4o-mini'),
       },
       apiKey: apiKey ? '已配置(****)' : '未配置',
+      cacheSize,
     });
+  }
+
+  private getCacheSize(): string {
+    return formatByteSize(getDiskCacheSize());
   }
 
   private async saveSettings(settings: Record<string, unknown>): Promise<void> {

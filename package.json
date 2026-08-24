@@ -2,7 +2,7 @@
   "name": "translation-plugin-vscode",
   "displayName": "Translation",
   "description": "Translation plugin for Visual Studio Code. Multiple translation engines, TTS, word book, translation dialog and more.",
-  "version": "0.1.17",
+  "version": "0.1.26",
   "publisher": "translation-plugin",
   "license": "MIT",
   "type": "module",
@@ -141,73 +141,25 @@
         {
           "type": "webview",
           "id": "translation.wordbook",
-          "name": "Word Book",
+          "name": "",
           "icon": "media/icons/wordbook.svg",
           "contextualTitle": "Word Book"
         }
       ]
     },
-    "viewsWelcome": [
-      {
-        "view": "translation.wordbook",
-        "contents": "生词本为空。选中文本后运行 \"Translation: Save to Word Book\" 保存单词。\n[打开翻译弹窗](command:translation.showDialog)"
-      }
-    ],
     "menus": {
       "editor/context": [
         {
           "command": "translation.translate",
-          "group": "navigation@1"
+          "group": "1_translation@1"
         },
         {
           "command": "translation.replaceWithTranslation",
-          "group": "navigation@2"
+          "group": "1_translation@2"
         }
       ],
-      "view/title": [
-        {
-          "command": "translation.switchEngine",
-          "group": "settings@1",
-          "when": "view == translation.wordbook"
-        },
-        {
-          "command": "translation.switchTtsEngine",
-          "group": "settings@2",
-          "when": "view == translation.wordbook"
-        },
-        {
-          "command": "translation.openSettings",
-          "group": "settings@3",
-          "when": "view == translation.wordbook"
-        }
-      ],
-      "view/title/context": [
-        {
-          "command": "translation.wordbook.export",
-          "group": "wordbook@1",
-          "when": "view == translation.wordbook"
-        },
-        {
-          "command": "translation.wordbook.import",
-          "group": "wordbook@2",
-          "when": "view == translation.wordbook"
-        },
-        {
-          "command": "translation.switchEngine",
-          "group": "settings@1",
-          "when": "view == translation.wordbook"
-        },
-        {
-          "command": "translation.switchTtsEngine",
-          "group": "settings@2",
-          "when": "view == translation.wordbook"
-        },
-        {
-          "command": "translation.openSettings",
-          "group": "settings@3",
-          "when": "view == translation.wordbook"
-        }
-      ],
+      "view/title": [],
+      "view/title/context": [],
       "commandPalette": [
         {
           "command": "translation.translate",
@@ -380,6 +332,95 @@
           "minimum": 0,
           "maximum": 120,
           "description": "Delay in seconds before showing the Word of the Day on startup."
+        },
+        "translation.wordOfDay.showDefinition": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show word definition in the Word of the Day popup."
+        },
+        "translation.mainLanguage": {
+          "type": "string",
+          "default": "zh-CN",
+          "description": "User's primary language."
+        },
+        "translation.font.family": {
+          "type": "string",
+          "default": "",
+          "description": "Font family for translation display. Leave empty to use VS Code default."
+        },
+        "translation.font.phonetic": {
+          "type": "string",
+          "default": "",
+          "description": "Font family for phonetic annotation display."
+        },
+        "translation.textSelection.stripPunctuation": {
+          "type": "boolean",
+          "default": false,
+          "description": "Strip punctuation marks from selected text before translation."
+        },
+        "translation.textSelection.preserveFormat": {
+          "type": "boolean",
+          "default": false,
+          "description": "Preserve original content formatting in translation."
+        },
+        "translation.textSelection.autoCapture": {
+          "type": "boolean",
+          "default": false,
+          "description": "Auto-capture text when opening translation dialog."
+        },
+        "translation.textSelection.regexFilter": {
+          "type": "string",
+          "default": "",
+          "description": "Regex pattern to filter out characters from selected text before translation."
+        },
+        "translation.popup.autoRead": {
+          "type": "string",
+          "enum": ["none", "original", "translation", "both"],
+          "enumDescriptions": ["Disabled", "Read original text", "Read translation", "Read both"],
+          "default": "none",
+          "description": "Auto-read aloud after translation."
+        },
+        "translation.popup.position": {
+          "type": "string",
+          "enum": ["cursor", "center", "mouse"],
+          "enumDescriptions": ["Follow cursor", "Center of editor", "Follow mouse"],
+          "default": "cursor",
+          "description": "Translation dialog popup position."
+        },
+        "translation.popup.autoCopy": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically copy translation result to clipboard."
+        },
+        "translation.replace.contextMenu": {
+          "type": "boolean",
+          "default": true,
+          "description": "Add translation actions to editor context menu."
+        },
+        "translation.replace.selectLanguageFirst": {
+          "type": "boolean",
+          "default": false,
+          "description": "Prompt to select languages before each translation."
+        },
+        "translation.replace.useLastLanguage": {
+          "type": "boolean",
+          "default": false,
+          "description": "Use the last selected language pair for translation."
+        },
+        "translation.replace.autoReplace": {
+          "type": "boolean",
+          "default": false,
+          "description": "Auto-replace original text if translation has only one result."
+        },
+        "translation.autoTranslateDocument": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically translate documents when opened."
+        },
+        "translation.contextMenuOnlyWithSelection": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show translation actions in context menu only when text is selected."
         }
       }
     }

@@ -115,21 +115,102 @@
   #empty a { color: var(--link); cursor: pointer; }
 
   /* ---------- Settings panel ---------- */
-  #view-settings { display: none; flex: 1 1 auto; overflow-y: auto; padding: 12px 14px; }
-  #view-settings h3 {
-    font-size: 12px; text-transform: uppercase; letter-spacing: 1px;
-    color: var(--muted); margin: 14px 0 6px;
+  #view-settings { display: none; flex: 1 1 auto; overflow-y: auto; padding: 0; }
+  .settings-section {
+    border-bottom: 1px solid var(--border);
+    padding: 12px 14px;
   }
-  #view-settings h3:first-child { margin-top: 0; }
-  .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
-  .field label { font-size: 11px; color: var(--muted); }
-  .field select, .field input {
+  .settings-section:last-child { border-bottom: none; }
+  .settings-section h3 {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px;
+    color: var(--muted); margin: 0 0 10px; font-weight: 600;
+  }
+  .settings-section h3:first-child { margin-top: 0; }
+  .field-row {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 8px; min-height: 28px;
+  }
+  .field-row:last-child { margin-bottom: 0; }
+  .field-row .field-label {
+    font-size: 12px; color: var(--fg); flex: 0 0 100px;
+    text-align: right; line-height: 1.4;
+  }
+  .field-row .field-control { flex: 1; display: flex; align-items: center; gap: 4px; }
+  .field-row select, .field-row input[type="text"], .field-row input[type="password"] {
+    flex: 1; background: var(--input-bg); color: var(--input-fg);
+    border: 1px solid var(--input-border); border-radius: 2px;
+    padding: 4px 6px; font-size: 12px; font-family: inherit; outline: none;
+    min-width: 0;
+  }
+  .field-row select:focus, .field-row input:focus { border-color: var(--button-bg); }
+  .field-row .gear-btn {
+    background: transparent; border: none; color: var(--muted);
+    cursor: pointer; padding: 2px; display: flex; align-items: center;
+    border-radius: 3px;
+  }
+  .field-row .gear-btn:hover { color: var(--fg); background: var(--row-hover); }
+  .field-row .help-icon {
+    color: var(--muted); cursor: help; font-size: 13px;
+    display: inline-flex; align-items: center;
+  }
+
+  /* Checkbox row */
+  .check-row {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 6px; font-size: 12px; color: var(--fg);
+    cursor: pointer; user-select: none;
+  }
+  .check-row input[type="checkbox"] {
+    appearance: none; -webkit-appearance: none;
+    width: 16px; height: 16px; border: 1px solid var(--border);
+    border-radius: 3px; background: var(--input-bg);
+    cursor: pointer; flex: 0 0 auto; position: relative;
+  }
+  .check-row input[type="checkbox"]:checked {
+    background: var(--button-bg); border-color: var(--button-bg);
+  }
+  .check-row input[type="checkbox"]:checked::after {
+    content: ''; position: absolute; left: 4px; top: 1px;
+    width: 5px; height: 9px; border: solid #fff;
+    border-width: 0 2px 2px 0; transform: rotate(45deg);
+  }
+  .check-row .check-label { line-height: 1.4; }
+
+  /* Regex input with help */
+  .regex-field { display: flex; align-items: center; gap: 6px; margin: 4px 0 2px 24px; }
+  .regex-field input {
+    flex: 1; background: var(--input-bg); color: var(--input-fg);
+    border: 1px solid var(--input-border); border-radius: 2px;
+    padding: 4px 6px; font-size: 12px; font-family: var(--vscode-editor-font-family, monospace);
+  }
+  .regex-hint { font-size: 11px; color: var(--muted); margin-left: 24px; margin-top: 2px; }
+
+  /* Font preview */
+  .font-preview {
+    background: var(--input-bg); border: 1px solid var(--border);
+    border-radius: 3px; padding: 8px 10px; margin-top: 4px;
+    font-size: 13px; color: var(--fg); min-height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    line-height: 1.5; text-align: center;
+  }
+  .font-preview .phonetic {
+    font-family: 'Segoe UI', 'Charis SIL', 'Doulos SIL', serif;
+    font-size: 14px; letter-spacing: 1px;
+  }
+
+  /* Font two-column layout */
+  .font-columns { display: flex; gap: 12px; }
+  .font-col { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+  .font-col-label { font-size: 12px; color: var(--fg); }
+  .font-input {
     background: var(--input-bg); color: var(--input-fg);
     border: 1px solid var(--input-border); border-radius: 2px;
-    padding: 5px 7px; font-size: 12px; font-family: inherit;
+    padding: 4px 6px; font-size: 12px; font-family: inherit; outline: none;
   }
-  .field input[type="checkbox"] { width: auto; }
-  .settings-actions { display: flex; gap: 8px; margin-top: 14px; }
+  .font-input:focus { border-color: var(--button-bg); }
+
+  /* Settings actions */
+  .settings-actions { display: flex; gap: 8px; margin-top: 14px; padding: 0 14px 14px; justify-content: flex-end; }
   .btn {
     background: var(--button-bg); color: var(--button-fg);
     border: none; padding: 6px 16px; border-radius: 2px; cursor: pointer; font-size: 13px;
@@ -137,8 +218,107 @@
   .btn:hover { opacity: 0.9; }
   .btn.secondary { background: transparent; border: 1px solid var(--border); color: var(--fg); }
 
+  /* Cache info row */
+  .cache-info {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
+    font-size: 12px; color: var(--fg);
+  }
+  .cache-info .cache-size { color: var(--muted); }
+  .cache-info .link-btn {
+    color: var(--link); cursor: pointer; background: none; border: none;
+    font-size: 12px; padding: 0;
+  }
+  .cache-info .link-btn:hover { text-decoration: underline; }
+
+  /* Path field with browse */
+  .path-field { display: flex; align-items: center; gap: 4px; }
+  .path-field input {
+    flex: 1; background: var(--input-bg); color: var(--input-fg);
+    border: 1px solid var(--input-border); border-radius: 2px;
+    padding: 4px 6px; font-size: 12px;
+  }
+  .path-field .browse-btn {
+    background: var(--input-bg); border: 1px solid var(--border);
+    color: var(--fg); border-radius: 3px; padding: 4px 6px;
+    cursor: pointer; font-size: 12px; display: flex; align-items: center;
+  }
+  .path-field .browse-btn:hover { background: var(--row-hover); }
+  .path-hint { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+  /* ---------- Modal dialog ---------- */
+  .modal-overlay {
+    display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5); z-index: 500;
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.visible { display: flex; }
+  .modal {
+    background: var(--vscode-editor-background, #252526);
+    border: 1px solid var(--border); border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    min-width: 380px; max-width: 460px; max-height: 80vh;
+    overflow-y: auto; color: var(--fg);
+  }
+  .modal-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px; border-bottom: 1px solid var(--border);
+  }
+  .modal-header .modal-icon { color: var(--muted); }
+  .modal-header .modal-title {
+    flex: 1; font-size: 13px; font-weight: 600;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .modal-header .modal-close {
+    background: none; border: none; color: var(--muted);
+    cursor: pointer; font-size: 16px; padding: 2px 6px;
+    border-radius: 4px; line-height: 1;
+  }
+  .modal-header .modal-close:hover { color: var(--fg); background: var(--row-hover); }
+  .modal-body { padding: 12px 14px; }
+  .modal-body .field-row .field-label { flex: 0 0 90px; }
+  .modal-footer {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px; border-top: 1px solid var(--border);
+  }
+  .modal-footer .spacer { flex: 1; }
+  .modal-footer .btn { min-width: 72px; text-align: center; }
+
+  /* Endpoint split input */
+  .endpoint-split { display: flex; align-items: center; gap: 0; flex: 1; }
+  .endpoint-split input:first-child {
+    flex: 1; background: var(--input-bg); color: var(--input-fg);
+    border: 1px solid var(--input-border); border-radius: 2px 0 0 2px;
+    padding: 4px 6px; font-size: 12px; border-right: none;
+  }
+  .endpoint-split input:last-child {
+    flex: 0 0 160px; background: var(--input-bg); color: var(--muted);
+    border: 1px solid var(--input-border); border-radius: 0 2px 2px 0;
+    padding: 4px 6px; font-size: 11px;
+  }
+  .endpoint-split input:focus { border-color: var(--button-bg); }
+
+  /* Custom model checkbox inline */
+  .check-inline {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px; color: var(--muted); margin-top: 4px;
+  }
+  .check-inline input[type="checkbox"] {
+    appearance: none; -webkit-appearance: none;
+    width: 14px; height: 14px; border: 1px solid var(--border);
+    border-radius: 2px; background: var(--input-bg);
+    cursor: pointer; position: relative;
+  }
+  .check-inline input[type="checkbox"]:checked {
+    background: var(--button-bg); border-color: var(--button-bg);
+  }
+  .check-inline input[type="checkbox"]:checked::after {
+    content: ''; position: absolute; left: 3px; top: 0;
+    width: 4px; height: 8px; border: solid #fff;
+    border-width: 0 2px 2px 0; transform: rotate(45deg);
+  }
+
   /* ---------- Provider dropdown ---------- */
-  .psel { position: relative; }
+  .psel { position: relative; min-width: 200px; max-width: 240px; }
   .psel-btn {
     width: 100%; display: flex; align-items: center; gap: 8px;
     background: var(--input-bg); color: var(--input-fg);
@@ -147,18 +327,20 @@
     cursor: pointer; text-align: left; line-height: 1;
   }
   .psel-btn:hover { border-color: var(--border); }
-  .psel-btn .psel-label { flex: 1; line-height: 1.2; }
+  .psel-btn .psel-label { flex: 1; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .psel-btn .psel-chev { opacity: 0.7; }
   .psel-menu {
-    display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 200;
+    display: none; position: absolute; top: 100%; left: 0; min-width: 100%; z-index: 9999;
     background: var(--menu-bg); color: var(--menu-fg);
     border: 1px solid var(--menu-border); border-radius: 4px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.4); padding: 3px 0; margin-top: 2px;
+    pointer-events: auto;
   }
   .psel.open .psel-menu { display: block; }
   .psel-item {
     display: flex; align-items: center; gap: 8px;
     padding: 5px 10px; cursor: pointer; font-size: 12px;
+    pointer-events: auto;
   }
   .psel-item:hover { background: var(--menu-selection-bg); color: var(--menu-selection-fg); }
   .psel-item.selected { font-weight: 600; }
@@ -355,49 +537,211 @@
   </div>
 
   <div id="view-settings">
-    <h3>翻译</h3>
-    <div class="field"><label>翻译引擎</label>
-      <div class="psel" id="s-defaultEngine" data-value="google">
-        <button type="button" class="psel-btn">
-          <svg class="ic psel-ic"><use href="#i-engine-google"></use></svg>
-          <span class="psel-label">Google Translate</span>
-          <svg class="ic psel-chev use-stroke"><use href="#i-sort"></use></svg>
-        </button>
-        <div class="psel-menu">
-          <div class="psel-item selected" data-value="google"><svg class="ic"><use href="#i-engine-google"></use></svg><span>Google Translate</span></div>
-          <div class="psel-item" data-value="microsoft"><svg class="ic"><use href="#i-engine-microsoft"></use></svg><span>Microsoft Translator</span></div>
-          <div class="psel-item" data-value="openai"><svg class="ic"><use href="#i-engine-openai"></use></svg><span>OpenAI</span></div>
+    <!-- 常规 -->
+    <div class="settings-section">
+      <h3>常规</h3>
+      <div class="field-row">
+        <span class="field-label">翻译引擎:</span>
+        <div class="field-control">
+          <div class="psel" id="s-defaultEngine" data-value="google" style="flex:1">
+            <button type="button" class="psel-btn">
+              <svg class="ic psel-ic"><use href="#i-engine-google"></use></svg>
+              <span class="psel-label">Google Translate</span>
+              <svg class="ic psel-chev use-stroke"><use href="#i-sort"></use></svg>
+            </button>
+            <div class="psel-menu">
+              <div class="psel-item selected" data-value="google"><svg class="ic"><use href="#i-engine-google"></use></svg><span>Google Translate</span></div>
+              <div class="psel-item" data-value="microsoft"><svg class="ic"><use href="#i-engine-microsoft"></use></svg><span>Microsoft Translator</span></div>
+              <div class="psel-item" data-value="openai"><svg class="ic"><use href="#i-engine-openai"></use></svg><span>OpenAI</span></div>
+            </div>
+          </div>
+          <button class="gear-btn" id="engineGearBtn" title="引擎高级设置" style="display:none">
+            <svg class="ic use-fill"><use href="#i-gear"></use></svg>
+          </button>
+        </div>
+      </div>
+      <div class="field-row">
+        <span class="field-label">TTS 引擎:</span>
+        <div class="field-control">
+          <div class="psel" id="s-ttsEngine" data-value="edge" style="flex:1">
+            <button type="button" class="psel-btn">
+              <svg class="ic psel-ic use-fill"><use href="#i-engine-microsoft"></use></svg>
+              <span class="psel-label">Microsoft Edge TTS</span>
+              <svg class="ic psel-chev use-stroke"><use href="#i-sort"></use></svg>
+            </button>
+            <div class="psel-menu">
+              <div class="psel-item selected" data-value="edge"><svg class="ic use-fill"><use href="#i-engine-microsoft"></use></svg><span>Microsoft Edge TTS</span></div>
+              <div class="psel-item" data-value="openai"><svg class="ic"><use href="#i-engine-openai"></use></svg><span>OpenAI TTS</span></div>
+            </div>
+          </div>
+          <button class="gear-btn" id="ttsGearBtn" title="TTS 高级设置" style="display:none">
+            <svg class="ic use-fill"><use href="#i-gear"></use></svg>
+          </button>
+        </div>
+      </div>
+      <div class="field-row">
+        <span class="field-label">主要语言:</span>
+        <div class="field-control"><select id="s-mainLanguage" style="min-width: 200px; max-width: 240px;"></select></div>
+      </div>
+      <div class="field-row">
+        <span class="field-label">源语言:</span>
+        <div class="field-control"><select id="s-sourceLanguage" style="min-width: 200px; max-width: 240px;"></select></div>
+      </div>
+      <div class="field-row">
+        <span class="field-label">目标语言:</span>
+        <div class="field-control"><select id="s-targetLanguage" style="min-width: 200px; max-width: 240px;"></select></div>
+      </div>
+    </div>
+
+    <!-- 字体 -->
+    <div class="settings-section">
+      <h3>字体</h3>
+      <div class="font-columns">
+        <div class="font-col">
+          <label class="font-col-label" for="s-fontFamily">主要字体:</label>
+          <input type="text" id="s-fontFamily" placeholder="留空使用默认字体" list="fontList" class="font-input">
+          <div class="font-preview" id="fontPreviewMain">海内存知己·天涯若比邻</div>
+        </div>
+        <div class="font-col">
+          <label class="font-col-label" for="s-fontPhonetic">注音字体:</label>
+          <input type="text" id="s-fontPhonetic" placeholder="留空使用默认字体" list="fontList" class="font-input">
+          <div class="font-preview" id="fontPreviewPhonetic">
+            <span class="phonetic">iː ɛ ɔː uː ɑː ɪ ɘ ɔ u ɐ ɛ ʌ ɑɪ ɛɪ ɔɪ ɪə ɛə ʊə</span>
+          </div>
+        </div>
+      </div>
+      <div class="settings-actions" style="padding: 8px 0 0;">
+        <button class="btn secondary" id="restoreFontBtn">恢复默认设置</button>
+      </div>
+    </div>
+
+    <!-- 翻译弹出窗 -->
+    <div class="settings-section">
+      <h3>翻译弹出窗</h3>
+      <label class="check-row"><input type="checkbox" id="s-hover"><span class="check-label">悬停翻译</span></label>
+      <label class="check-row"><input type="checkbox" id="s-hoverDoc"><span class="check-label">函数文档翻译</span></label>
+      <label class="check-row"><input type="checkbox" id="s-autoCopy"><span class="check-label">自动复制译文</span></label>
+      <div class="field-row" style="margin-top: 6px;">
+        <span class="field-label">自动朗读:</span>
+        <div class="field-control">
+          <select id="s-autoRead">
+            <option value="none">不朗读</option>
+            <option value="original">原文</option>
+            <option value="translation">译文</option>
+            <option value="both">原文和译文</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-row">
+        <span class="field-label">弹窗位置:</span>
+        <div class="field-control">
+          <select id="s-popupPosition">
+            <option value="cursor">跟随光标</option>
+            <option value="center">居中</option>
+            <option value="mouse">跟随鼠标</option>
+          </select>
+          <span class="help-icon" title="翻译弹窗的显示位置">❓</span>
         </div>
       </div>
     </div>
-    <div class="field"><label>源语言</label><select id="s-sourceLanguage"></select></div>
-    <div class="field"><label>目标语言</label><select id="s-targetLanguage"></select></div>
-    <div class="field"><label>替换为译文的命名风格</label>
-      <select id="s-replaceSeparator"><option value="original">原文</option><option value="camelCase">camelCase</option><option value="snake_case">snake_case</option><option value="PascalCase">PascalCase</option><option value="kebab-case">kebab-case</option></select></div>
-    <div class="field"><label><input type="checkbox" id="s-hover"> 悬停翻译</label></div>
 
-    <h3>朗读 (TTS)</h3>
-    <div class="field"><label>TTS 引擎</label>
-      <div class="psel" id="s-ttsEngine" data-value="edge">
-        <button type="button" class="psel-btn">
-          <svg class="ic psel-ic use-fill"><use href="#i-speech"></use></svg>
-          <span class="psel-label">Microsoft Edge TTS</span>
-          <svg class="ic psel-chev use-stroke"><use href="#i-sort"></use></svg>
-        </button>
-        <div class="psel-menu">
-          <div class="psel-item selected" data-value="edge"><svg class="ic use-fill"><use href="#i-speech"></use></svg><span>Microsoft Edge TTS</span></div>
-          <div class="psel-item" data-value="openai"><svg class="ic"><use href="#i-engine-openai"></use></svg><span>OpenAI TTS</span></div>
+    <!-- 文本选择 -->
+    <div class="settings-section">
+      <h3>文本选择</h3>
+      <label class="check-row"><input type="checkbox" id="s-stripPunctuation"><span class="check-label">自动去除标点符号</span></label>
+      <label class="check-row"><input type="checkbox" id="s-preserveFormat"><span class="check-label">保留内容格式</span></label>
+      <label class="check-row"><input type="checkbox" id="s-autoCapture"><span class="check-label">打开翻译对话框时取词</span></label>
+      <div class="regex-field">
+        <input type="text" id="s-regexFilter" placeholder="如 [\*/#$]" style="flex:1">
+        <span class="help-icon" title="正则表达式，匹配的字符将在翻译前被移除">❓</span>
+      </div>
+      <div class="regex-hint">正则表达式，匹配的字符将在翻译前被移除</div>
+    </div>
+
+    <!-- 翻译并替换 -->
+    <div class="settings-section">
+      <h3>翻译并替换</h3>
+      <label class="check-row"><input type="checkbox" id="s-selectLangFirst"><span class="check-label">翻译前选择语言</span></label>
+      <label class="check-row" style="margin-left: 20px;"><input type="checkbox" id="s-useLastLang"><span class="check-label">使用上次选择的语言</span></label>
+      <label class="check-row"><input type="checkbox" id="s-ctxMenu"><span class="check-label">加入到上下文菜单</span></label>
+      <label class="check-row"><input type="checkbox" id="s-autoReplace"><span class="check-label">如果结果只有一个，则自动替换</span></label>
+      <div class="field-row" style="margin-top: 6px;">
+        <span class="field-label">分隔符:</span>
+        <div class="field-control">
+          <select id="s-replaceSeparator" style="min-width: 200px; max-width: 240px;">
+            <option value="original">原文</option>
+            <option value="camelCase">camelCase</option>
+            <option value="snake_case">snake_case</option>
+            <option value="PascalCase">PascalCase</option>
+            <option value="kebab-case">kebab-case</option>
+          </select>
+          <span class="help-icon" title="替换翻译时使用的分隔符样式">❓</span>
         </div>
       </div>
     </div>
-    <div class="field"><label>Edge 音色</label><input id="s-edgeVoice" placeholder="如 zh-CN-XiaoxiaoNeural,留空自动"></div>
-    <div class="field"><label>OpenAI 音色</label>
-      <select id="s-openAiVoice"><option value="alloy">alloy</option><option value="echo">echo</option><option value="fable">fable</option><option value="onyx">onyx</option><option value="nova">nova</option><option value="shimmer">shimmer</option></select></div>
 
-    <h3>OpenAI 兼容</h3>
-    <div class="field"><label>Base URL</label><input id="s-baseUrl" placeholder="https://api.openai.com"></div>
-    <div class="field"><label>模型</label><input id="s-model" placeholder="gpt-4o-mini"></div>
-    <div class="field"><label>API Key</label><input id="s-apiKey" type="password" placeholder="留空表示使用已保存的 Key"></div>
+    <!-- 每日单词 -->
+    <div class="settings-section">
+      <h3>每日单词</h3>
+      <label class="check-row"><input type="checkbox" id="s-wordAutoShow"><span class="check-label">启动时显示每日单词</span></label>
+      <label class="check-row"><input type="checkbox" id="s-wordShowDef"><span class="check-label">显示单词释义</span></label>
+    </div>
+
+    <!-- 单词本 -->
+    <div class="settings-section">
+      <h3>单词本</h3>
+      <div class="field-row">
+        <span class="field-label">存储路径:</span>
+        <div class="field-control path-field">
+          <input type="text" id="s-wordbookPath" readonly placeholder="点击浏览选择路径..." style="flex:1; cursor: pointer;">
+          <button class="btn secondary" id="browseWordbookPathBtn" title="浏览..." style="padding: 4px 10px; font-size: 12px; white-space: nowrap;">浏览...</button>
+          <button class="btn secondary" id="restoreWordbookPathBtn" title="恢复默认路径" style="padding: 4px 10px; font-size: 12px; white-space: nowrap;">恢复默认</button>
+        </div>
+      </div>
+      <div class="path-hint">要使用 iCloud Drive、Google Drive、One Drive 和 Dropbox 等同步服务，只需将存储路径设置到相应的同步文件夹内即可。</div>
+    </div>
+
+    <!-- 缓存和历史记录 -->
+    <div class="settings-section">
+      <h3>缓存和历史记录</h3>
+      <div class="field-row">
+        <span class="field-label">磁盘缓存:</span>
+        <div class="field-control">
+          <span id="cacheSize" style="color: var(--muted); margin-right: 8px;">0KB</span>
+          <button class="btn secondary" id="clearCacheBtn" style="padding: 2px 12px; font-size: 12px;">清除</button>
+        </div>
+      </div>
+      <div class="field-row">
+        <span class="field-label">最大历史数:</span>
+        <div class="field-control">
+          <select id="s-historyMax" style="flex:0 0 auto; min-width: 80px;">
+            <option value="20">20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+            <option value="200">200</option>
+            <option value="500">500</option>
+          </select>
+          <button class="btn secondary" id="clearHistoryBtn" style="margin-left: 8px; padding: 2px 12px; font-size: 12px;">清除历史记录</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 其他 -->
+    <div class="settings-section">
+      <h3>其他</h3>
+      <label class="check-row"><input type="checkbox" id="s-autoTranslateDoc"><span class="check-label">自动翻译文档</span></label>
+      <label class="check-row"><input type="checkbox" id="s-ctxMenuOnlySel"><span class="check-label">仅当文本被选中时，右键菜单显示翻译操作</span></label>
+    </div>
+
+    <!-- OpenAI 兼容 (hidden — configured via modal dialog) -->
+    <div id="openaiSection" style="display:none">
+      <input type="hidden" id="s-baseUrl" value="https://api.openai.com">
+      <input type="hidden" id="s-model" value="gpt-4o-mini">
+      <input type="hidden" id="s-apiKey" value="">
+      <input type="hidden" id="s-edgeVoice" value="">
+      <input type="hidden" id="s-edgeSpeed" value="0%">
+      <input type="hidden" id="s-openAiVoice" value="alloy">
+    </div>
 
     <div class="settings-actions">
       <button class="btn" id="saveSettingsBtn">保存</button>
@@ -405,7 +749,165 @@
     </div>
   </div>
 
-  <div id="ctxmenu"></div>
+  <datalist id="fontList">
+    <option value="Consolas">
+    <option value="Courier New">
+    <option value="Fira Code">
+    <option value="JetBrains Mono">
+    <option value="Source Code Pro">
+    <option value="Microsoft YaHei">
+    <option value="SimSun">
+    <option value="KaiTi">
+    <option value="Segoe UI">
+    <option value="Arial">
+  </datalist>
+
+  <div id="ctxmenu" class="dropdown"></div>
+
+  <!-- OpenAI Translation Config Modal -->
+  <div class="modal-overlay" id="openaiModal">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title">
+          <svg class="ic" width="16" height="16"><use href="#i-engine-openai"></use></svg>
+          OpenAI 翻译配置
+        </span>
+        <button class="modal-close" data-close="openaiModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="field-row">
+          <span class="field-label">服务商:</span>
+          <div class="field-control">
+            <div class="psel" id="m-openaiProvider" data-value="openai" style="flex:1">
+              <button type="button" class="psel-btn">
+                <svg class="ic psel-ic"><use href="#i-engine-openai"></use></svg>
+                <span class="psel-label">OpenAI</span>
+                <svg class="ic psel-chev use-stroke"><use href="#i-sort"></use></svg>
+              </button>
+              <div class="psel-menu">
+                <div class="psel-item selected" data-value="openai"><svg class="ic"><use href="#i-engine-openai"></use></svg><span>OpenAI</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="field-row">
+          <span class="field-label">模型:</span>
+          <div class="field-control">
+            <select id="m-openaiModel" style="flex:1">
+              <option value="gpt-4o-mini">gpt-4o-mini</option>
+              <option value="gpt-4o">gpt-4o</option>
+              <option value="gpt-4-turbo">gpt-4-turbo</option>
+              <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+              <option value="custom">自定义...</option>
+            </select>
+          </div>
+        </div>
+        <div class="check-inline" id="m-customModelRow" style="margin-left: 90px;">
+          <input type="checkbox" id="m-customModel">
+          <span>自定义模型</span>
+          <input type="text" id="m-customModelInput" placeholder="输入模型名称" style="display:none; flex:1; background: var(--input-bg); color: var(--input-fg); border: 1px solid var(--input-border); border-radius: 2px; padding: 3px 5px; font-size: 12px; margin-left: 4px;">
+        </div>
+        <div class="field-row" style="margin-top: 8px;">
+          <span class="field-label">API 端点:</span>
+          <div class="field-control">
+            <div class="endpoint-split">
+              <input type="text" id="m-openaiBaseUrl" placeholder="https://api.openai.com" value="https://api.openai.com">
+              <input type="text" value="/v1/chat/completions" readonly>
+            </div>
+          </div>
+        </div>
+        <div class="field-row">
+          <span class="field-label">API 密钥:</span>
+          <div class="field-control">
+            <input type="password" id="m-openaiApiKey" placeholder="sk-..." style="flex:1">
+            <span class="help-icon" title="API 密钥将安全存储在系统凭据库中">❓</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <span class="help-icon" title="需要帮助？">❓</span>
+        <div class="spacer"></div>
+        <button class="btn" id="m-openaiOk">确定</button>
+        <button class="btn secondary" data-close="openaiModal">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TTS Config Modal -->
+  <div class="modal-overlay" id="ttsModal">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title">
+          <svg class="ic use-fill" width="16" height="16"><use href="#i-speech"></use></svg>
+          TTS 朗读设置
+        </span>
+        <button class="modal-close" data-close="ttsModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="field-row">
+          <span class="field-label">服务商:</span>
+          <div class="field-control">
+            <div class="psel" id="m-ttsProvider" data-value="edge" style="flex:1">
+              <button type="button" class="psel-btn">
+                <svg class="ic psel-ic use-fill"><use href="#i-engine-microsoft"></use></svg>
+                <span class="psel-label">Microsoft Edge TTS</span>
+                <svg class="ic psel-chev use-stroke"><use href="#i-sort"></use></svg>
+              </button>
+              <div class="psel-menu">
+                <div class="psel-item selected" data-value="edge"><svg class="ic use-fill"><use href="#i-engine-microsoft"></use></svg><span>Microsoft Edge TTS</span></div>
+                <div class="psel-item" data-value="openai"><svg class="ic"><use href="#i-engine-openai"></use></svg><span>OpenAI TTS</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Edge TTS fields -->
+        <div id="m-edgeFields">
+          <div class="field-row" style="margin-top: 8px;">
+            <span class="field-label">音色:</span>
+            <div class="field-control">
+              <input type="text" id="m-edgeVoice" placeholder="如 zh-CN-XiaoxiaoNeural,留空自动" style="flex:1">
+            </div>
+          </div>
+          <div class="field-row">
+            <span class="field-label">语速:</span>
+            <div class="field-control">
+              <select id="m-edgeSpeed" style="flex:1">
+                <option value="-50%">慢速 (-50%)</option>
+                <option value="-25%">较慢 (-25%)</option>
+                <option value="0%" selected>正常 (0%)</option>
+                <option value="+25%">较快 (+25%)</option>
+                <option value="+50%">快速 (+50%)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- OpenAI TTS fields -->
+        <div id="m-openaiTtsFields" style="display:none;">
+          <div class="field-row" style="margin-top: 8px;">
+            <span class="field-label">音色:</span>
+            <div class="field-control">
+              <select id="m-openaiTtsVoice" style="flex:1">
+                <option value="alloy">alloy</option>
+                <option value="echo">echo</option>
+                <option value="fable">fable</option>
+                <option value="onyx">onyx</option>
+                <option value="nova">nova</option>
+                <option value="shimmer">shimmer</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <span class="help-icon" title="需要帮助？">❓</span>
+        <div class="spacer"></div>
+        <button class="btn" id="m-ttsOk">确定</button>
+        <button class="btn secondary" data-close="ttsModal">取消</button>
+      </div>
+    </div>
+  </div>
 
 <script>
   (function () {
@@ -452,12 +954,33 @@
     function collectSettings() {
       return {
         defaultEngine: getPsel('s-defaultEngine'),
+        mainLanguage: $('s-mainLanguage').value,
         sourceLanguage: $('s-sourceLanguage').value,
         targetLanguage: $('s-targetLanguage').value,
-        replaceSeparator: $('s-replaceSeparator').value,
+        'font.family': $('s-fontFamily').value,
+        'font.phonetic': $('s-fontPhonetic').value,
+        'textSelection.stripPunctuation': $('s-stripPunctuation').checked,
+        'textSelection.preserveFormat': $('s-preserveFormat').checked,
+        'textSelection.autoCapture': $('s-autoCapture').checked,
+        'textSelection.regexFilter': $('s-regexFilter').value,
         'hover.enabled': $('s-hover').checked,
+        'hover.docTranslation': $('s-hoverDoc').checked,
+        'popup.autoRead': $('s-autoRead').value,
+        'popup.position': $('s-popupPosition').value,
+        'popup.autoCopy': $('s-autoCopy').checked,
+        'replace.contextMenu': $('s-ctxMenu').checked,
+        'replace.selectLanguageFirst': $('s-selectLangFirst').checked,
+        'replace.useLastLanguage': $('s-useLastLang').checked,
+        'replace.autoReplace': $('s-autoReplace').checked,
+        replaceSeparator: $('s-replaceSeparator').value,
+        'wordOfDay.autoShow': $('s-wordAutoShow').checked,
+        'wordOfDay.showDefinition': $('s-wordShowDef').checked,
+        'history.maxEntries': parseInt($('s-historyMax').value, 10),
+        autoTranslateDocument: $('s-autoTranslateDoc').checked,
+        contextMenuOnlyWithSelection: $('s-ctxMenuOnlySel').checked,
         ttsEngine: getPsel('s-ttsEngine'),
         'tts.edge.voice': $('s-edgeVoice').value,
+        'tts.edge.speed': $('s-edgeSpeed').value,
         'tts.openai.voice': $('s-openAiVoice').value,
         'openai.baseUrl': $('s-baseUrl').value,
         'openai.model': $('s-model').value,
@@ -626,20 +1149,31 @@
     function initPsel(id) {
       const el = $(id);
       const btn = el.querySelector('.psel-btn');
+
       btn.addEventListener('click', (e) => {
+        e.preventDefault();
         e.stopPropagation();
-        document.querySelectorAll('.psel.open').forEach((o) => { if (o !== el) o.classList.remove('open'); });
-        el.classList.toggle('open');
+        const wasOpen = el.classList.contains('open');
+        document.querySelectorAll('.psel.open').forEach((o) => o.classList.remove('open'));
+        if (!wasOpen) el.classList.add('open');
       });
+
       el.querySelectorAll('.psel-item').forEach((item) => {
         item.addEventListener('click', (e) => {
+          e.preventDefault();
           e.stopPropagation();
           setPsel(id, item.dataset.value);
           el.classList.remove('open');
         });
       });
-      document.addEventListener('click', (e) => { if (!el.contains(e.target)) el.classList.remove('open'); });
     }
+
+    // Close all psel menus on outside click
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.psel')) {
+        document.querySelectorAll('.psel.open').forEach((o) => o.classList.remove('open'));
+      }
+    });
     function setPsel(id, value) {
       const el = $(id);
       const item = el.querySelector('.psel-item[data-value="' + value + '"]');
@@ -780,18 +1314,27 @@
         item.addEventListener('click', () => { hideCtxMenu(); action(); });
         menu.appendChild(item);
       };
-      addItem('i-star', 'use-fill', '详情', () => vscode.postMessage({ type: 'detail', entry }));
       addItem('i-copy', 'use-fill', '复制', () => vscode.postMessage({ type: 'copy', entry }));
       addItem('i-speech', 'use-fill', '朗读', () => vscode.postMessage({ type: 'speak', entry }));
       const sep = document.createElement('div'); sep.className = 'sep'; menu.appendChild(sep);
       addItem('i-star-off', 'use-stroke', '删除', () => vscode.postMessage({ type: 'delete', entry }));
-      menu.style.display = 'block';
-      const rect = menu.getBoundingClientRect();
-      menu.style.left = Math.min(x, window.innerWidth - rect.width - 4) + 'px';
-      menu.style.top = Math.min(y, window.innerHeight - rect.height - 4) + 'px';
+      menu.classList.add('visible');
+      // Measure and clamp to viewport.
+      const menuW = menu.offsetWidth;
+      const menuH = menu.offsetHeight;
+      const viewW = window.innerWidth;
+      const viewH = window.innerHeight;
+      let left = x;
+      let top = y;
+      if (left + menuW > viewW - 4) left = viewW - menuW - 4;
+      if (left < 4) left = 4;
+      if (top + menuH > viewH - 4) top = viewH - menuH - 4;
+      if (top < 4) top = 4;
+      menu.style.left = left + 'px';
+      menu.style.top = top + 'px';
       ctxMenuVisible = true;
     }
-    function hideCtxMenu() { $('ctxmenu').style.display = 'none'; ctxMenuVisible = false; }
+    function hideCtxMenu() { $('ctxmenu').classList.remove('visible'); ctxMenuVisible = false; }
 
     // ---- Messages from extension ----
     window.addEventListener('message', (event) => {
@@ -800,40 +1343,240 @@
         entries = msg.entries || [];
         render();
       } else if (msg.type === 'settings') {
-        fillSettings(msg.settings || {}, msg.apiKey || '');
+        fillSettings(msg.settings || {}, msg.apiKey || '', msg.cacheSize);
       } else if (msg.type === 'saved') {
         showSettings(false);
         vscode.postMessage({ type: 'getWords' });
+      } else if (msg.type === 'cacheCleared') {
+        $('cacheSize').textContent = msg.cacheSize || '0KB';
+      } else if (msg.type === 'wordbookPathChanged') {
+        $('s-wordbookPath').value = msg.path || '';
+      } else if (msg.type === 'historyCleared') {
+        void 0;
       }
     });
 
     // ---- Settings fill ----
-    function fillSettings(s, apiKey) {
+    function fillSettings(s, apiKey, cacheSize) {
       setPsel('s-defaultEngine', s.defaultEngine || 'google');
+      $('s-mainLanguage').value = s.mainLanguage || 'zh-CN';
       $('s-sourceLanguage').value = s.sourceLanguage || 'auto';
       $('s-targetLanguage').value = s.targetLanguage || 'zh-CN';
-      $('s-replaceSeparator').value = s.replaceSeparator || 'original';
+      $('s-fontFamily').value = s['font.family'] || '';
+      $('s-fontPhonetic').value = s['font.phonetic'] || '';
+      $('s-stripPunctuation').checked = !!s['textSelection.stripPunctuation'];
+      $('s-preserveFormat').checked = !!s['textSelection.preserveFormat'];
+      $('s-autoCapture').checked = !!s['textSelection.autoCapture'];
+      $('s-regexFilter').value = s['textSelection.regexFilter'] || '';
       $('s-hover').checked = !!s['hover.enabled'];
+      $('s-hoverDoc').checked = !!s['hover.docTranslation'];
+      $('s-autoRead').value = s['popup.autoRead'] || 'none';
+      $('s-popupPosition').value = s['popup.position'] || 'cursor';
+      $('s-autoCopy').checked = !!s['popup.autoCopy'];
+      $('s-ctxMenu').checked = !!s['replace.contextMenu'];
+      $('s-selectLangFirst').checked = !!s['replace.selectLanguageFirst'];
+      $('s-useLastLang').checked = !!s['replace.useLastLanguage'];
+      $('s-autoReplace').checked = !!s['replace.autoReplace'];
+      $('s-replaceSeparator').value = s.replaceSeparator || 'original';
+      $('s-wordAutoShow').checked = !!s['wordOfDay.autoShow'];
+      $('s-wordShowDef').checked = !!s['wordOfDay.showDefinition'];
+      $('s-wordbookPath').value = s['wordbook.resolvedPath'] || s['wordbook.path'] || '';
+      $('s-historyMax').value = String(s['history.maxEntries'] || 100);
+      $('s-autoTranslateDoc').checked = !!s.autoTranslateDocument;
+      $('s-ctxMenuOnlySel').checked = !!s.contextMenuOnlyWithSelection;
       setPsel('s-ttsEngine', s.ttsEngine || 'edge');
       $('s-edgeVoice').value = s['tts.edge.voice'] || '';
+      $('s-edgeSpeed').value = s['tts.edge.speed'] || '0%';
       $('s-openAiVoice').value = s['tts.openai.voice'] || 'alloy';
       $('s-baseUrl').value = s['openai.baseUrl'] || 'https://api.openai.com';
       $('s-model').value = s['openai.model'] || 'gpt-4o-mini';
       $('s-apiKey').value = '';
       $('s-apiKey').placeholder = apiKey ? '已保存(****),输入以更新' : '未配置';
+      if (cacheSize) { $('cacheSize').textContent = cacheSize; }
+      updateFontPreviews();
+      updateEngineGear();
+      updateTtsGear();
     }
 
     // Populate language selects.
     function fillLanguages() {
-      const langOpts = (skipAuto) => {
-        const codes = ['auto','zh-CN','zh-TW','en','ja','ko','fr','de','es','pt','pt-BR','ru','it','nl','pl','tr','vi','th','id','ar','hi','he','sv','da','no','fi','cs','hu','ro','bg','uk','el','sk','hr','sl','lt','lv','et','fa','ur','bn','ta','te','ca','fil','sw','cy'];
-        return codes.filter((c) => !skipAuto || c !== 'auto')
-          .map((c) => '<option value="' + c + '">' + c + '</option>').join('');
+      const langCodes = ['auto','zh-CN','zh-TW','en','ja','ko','fr','de','es','pt','pt-BR','ru','it','nl','pl','tr','vi','th','id','ar','hi','he','sv','da','no','fi','cs','hu','ro','bg','uk','el','sk','hr','sl','lt','lv','et','fa','ur','bn','ta','te','ca','fil','sw','cy'];
+      const langNames = {
+        'auto': '检测语言', 'zh-CN': '中文（简体）', 'zh-TW': '中文（繁体）', 'en': '英语', 'ja': '日语',
+        'ko': '韩语', 'fr': '法语', 'de': '德语', 'es': '西班牙语', 'pt': '葡萄牙语', 'pt-BR': '葡萄牙语(巴西)',
+        'ru': '俄语', 'it': '意大利语', 'nl': '荷兰语', 'pl': '波兰语', 'tr': '土耳其语', 'vi': '越南语',
+        'th': '泰语', 'id': '印尼语', 'ar': '阿拉伯语', 'hi': '印地语', 'he': '希伯来语', 'sv': '瑞典语',
+        'da': '丹麦语', 'no': '挪威语', 'fi': '芬兰语', 'cs': '捷克语', 'hu': '匈牙利语', 'ro': '罗马尼亚语',
+        'bg': '保加利亚语', 'uk': '乌克兰语', 'el': '希腊语', 'sk': '斯洛伐克语', 'hr': '克罗地亚语',
+        'sl': '斯洛文尼亚语', 'lt': '立陶宛语', 'lv': '拉脱维亚语', 'et': '爱沙尼亚语', 'fa': '波斯语',
+        'ur': '乌尔都语', 'bn': '孟加拉语', 'ta': '泰米尔语', 'te': '泰卢固语', 'ca': '加泰罗尼亚语',
+        'fil': '菲律宾语', 'sw': '斯瓦希里语', 'cy': '威尔士语',
       };
-      $('s-sourceLanguage').innerHTML = langOpts(false);
-      $('s-targetLanguage').innerHTML = langOpts(true);
+      const opts = (skipAuto) => langCodes
+        .filter((c) => !skipAuto || c !== 'auto')
+        .map((c) => '<option value="' + c + '">' + (langNames[c] || c) + '</option>').join('');
+      $('s-mainLanguage').innerHTML = langCodes.filter((c) => c !== 'auto')
+        .map((c) => '<option value="' + c + '">' + (langNames[c] || c) + '</option>').join('');
+      $('s-sourceLanguage').innerHTML = opts(false);
+      $('s-targetLanguage').innerHTML = opts(true);
     }
     fillLanguages();
+
+    // ---- Font preview live update ----
+    function updateFontPreviews() {
+      const mainFont = $('s-fontFamily').value.trim();
+      const phFont = $('s-fontPhonetic').value.trim();
+      $('fontPreviewMain').style.fontFamily = mainFont || '';
+      $('fontPreviewPhonetic').style.fontFamily = phFont || '';
+    }
+    $('s-fontFamily').addEventListener('input', updateFontPreviews);
+    $('s-fontPhonetic').addEventListener('input', updateFontPreviews);
+
+    // ---- Engine gear button: show/hide based on engine, open modal ----
+    function updateEngineGear() {
+      const engine = getPsel('s-defaultEngine');
+      $('engineGearBtn').style.display = (engine === 'openai') ? 'flex' : 'none';
+    }
+
+    function updateTtsGear() {
+      const tts = getPsel('s-ttsEngine');
+      $('ttsGearBtn').style.display = (tts === 'openai' || tts === 'edge') ? 'flex' : 'none';
+    }
+
+    // Use MutationObserver to track psel value changes
+    new MutationObserver(() => updateEngineGear())
+      .observe($('s-defaultEngine'), { attributes: true, attributeFilter: ['data-value'] });
+
+    new MutationObserver(() => updateTtsGear())
+      .observe($('s-ttsEngine'), { attributes: true, attributeFilter: ['data-value'] });
+
+    new MutationObserver(() => {
+      const v = getPsel('m-ttsProvider');
+      $('m-edgeFields').style.display = v === 'edge' ? '' : 'none';
+      $('m-openaiTtsFields').style.display = v === 'openai' ? '' : 'none';
+    }).observe($('m-ttsProvider'), { attributes: true, attributeFilter: ['data-value'] });
+
+    $('engineGearBtn').addEventListener('click', () => {
+      const cfg = vscode.getState?.() || {};
+      $('m-openaiModel').value = $('s-model').value || 'gpt-4o-mini';
+      $('m-openaiBaseUrl').value = $('s-baseUrl').value || 'https://api.openai.com';
+      $('m-openaiApiKey').value = $('s-apiKey').value || '';
+      $('m-openaiApiKey').placeholder = $('s-apiKey').placeholder || 'sk-...';
+      // Check if current model is custom
+      const knownModels = ['gpt-4o-mini', 'gpt-4o', 'gpt-4-turbo', 'gpt-3.5-turbo'];
+      const currentModel = $('s-model').value;
+      if (!knownModels.includes(currentModel) && currentModel) {
+        $('m-openaiModel').value = 'custom';
+        $('m-customModel').checked = true;
+        $('m-customModelInput').style.display = '';
+        $('m-customModelInput').value = currentModel;
+      } else {
+        $('m-customModel').checked = false;
+        $('m-customModelInput').style.display = 'none';
+      }
+      openModal('openaiModal');
+    });
+
+    $('m-openaiModel').addEventListener('change', (e) => {
+      if (e.target.value === 'custom') {
+        $('m-customModel').checked = true;
+        $('m-customModelInput').style.display = '';
+        $('m-customModelInput').focus();
+      } else {
+        $('m-customModel').checked = false;
+        $('m-customModelInput').style.display = 'none';
+      }
+    });
+    $('m-customModel').addEventListener('change', () => {
+      if ($('m-customModel').checked) {
+        $('m-openaiModel').value = 'custom';
+        $('m-customModelInput').style.display = '';
+        $('m-customModelInput').focus();
+      } else {
+        $('m-customModelInput').style.display = 'none';
+        if ($('m-openaiModel').value === 'custom') {
+          $('m-openaiModel').value = 'gpt-4o-mini';
+        }
+      }
+    });
+
+    $('m-openaiOk').addEventListener('click', () => {
+      let model = $('m-openaiModel').value;
+      if (model === 'custom') {
+        model = $('m-customModelInput').value.trim() || 'gpt-4o-mini';
+      }
+      $('s-model').value = model;
+      $('s-baseUrl').value = $('m-openaiBaseUrl').value || 'https://api.openai.com';
+      if ($('m-openaiApiKey').value) {
+        $('s-apiKey').value = $('m-openaiApiKey').value;
+      }
+      closeModal('openaiModal');
+    });
+
+    // ---- TTS gear button: open TTS modal ----
+    $('ttsGearBtn').addEventListener('click', () => {
+      setPsel('m-ttsProvider', getPsel('s-ttsEngine') || 'edge');
+      $('m-edgeVoice').value = $('s-edgeVoice').value || '';
+      $('m-edgeSpeed').value = $('s-edgeSpeed').value || '0%';
+      $('m-openaiTtsVoice').value = $('s-openAiVoice').value || 'alloy';
+      openModal('ttsModal');
+    });
+
+    $('m-ttsOk').addEventListener('click', () => {
+      const ttsProvider = getPsel('m-ttsProvider');
+      setPsel('s-ttsEngine', ttsProvider);
+      $('s-edgeVoice').value = $('m-edgeVoice').value;
+      $('s-edgeSpeed').value = $('m-edgeSpeed').value;
+      $('s-openAiVoice').value = $('m-openaiTtsVoice').value;
+      closeModal('ttsModal');
+    });
+
+    // ---- Modal helpers ----
+    function openModal(id) { $(id).classList.add('visible'); }
+    function closeModal(id) { $(id).classList.remove('visible'); }
+    document.querySelectorAll('[data-close]').forEach((el) => {
+      el.addEventListener('click', () => closeModal(el.dataset.close));
+    });
+    document.querySelectorAll('.modal-overlay').forEach((overlay) => {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) { overlay.classList.remove('visible'); }
+      });
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        document.querySelectorAll('.modal-overlay.visible').forEach((o) => o.classList.remove('visible'));
+      }
+    });
+
+    initPsel('m-openaiProvider');
+    initPsel('m-ttsProvider');
+
+    // ---- Restore font defaults ----
+    $('restoreFontBtn').addEventListener('click', () => {
+      $('s-fontFamily').value = '';
+      $('s-fontPhonetic').value = '';
+      updateFontPreviews();
+    });
+
+    // ---- Wordbook path browse / restore ----
+    $('browseWordbookPathBtn').addEventListener('click', () => {
+      vscode.postMessage({ type: 'browseWordbookPath' });
+    });
+    $('s-wordbookPath').addEventListener('click', () => {
+      vscode.postMessage({ type: 'browseWordbookPath' });
+    });
+    $('restoreWordbookPathBtn').addEventListener('click', () => {
+      vscode.postMessage({ type: 'saveSettings', settings: { 'wordbook.path': '' } });
+      $('s-wordbookPath').value = '';
+    });
+
+    // ---- Clear cache / history ----
+    $('clearCacheBtn').addEventListener('click', () => {
+      vscode.postMessage({ type: 'clearCache' });
+    });
+    $('clearHistoryBtn').addEventListener('click', () => {
+      vscode.postMessage({ type: 'clearHistory' });
+    });
 
     // Ask for the initial word list.
     vscode.postMessage({ type: 'getWords' });
