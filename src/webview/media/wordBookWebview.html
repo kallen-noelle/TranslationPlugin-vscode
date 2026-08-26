@@ -543,15 +543,17 @@
       <div class="field-row">
         <span class="field-label">翻译引擎:</span>
         <div class="field-control">
-          <div class="psel" id="s-defaultEngine" data-value="google" style="flex:1">
+          <div class="psel" id="s-defaultEngine" data-value="microsoft" style="flex:1">
             <button type="button" class="psel-btn">
-              <svg class="ic psel-ic"><use href="#i-engine-google"></use></svg>
-              <span class="psel-label">Google Translate</span>
+              <svg class="ic psel-ic use-fill"><use href="#i-engine-microsoft"></use></svg>
+              <span class="psel-label">Microsoft Translator</span>
               <svg class="ic psel-chev use-stroke"><use href="#i-sort"></use></svg>
             </button>
             <div class="psel-menu">
-              <div class="psel-item selected" data-value="google"><svg class="ic"><use href="#i-engine-google"></use></svg><span>Google Translate</span></div>
-              <div class="psel-item" data-value="microsoft"><svg class="ic"><use href="#i-engine-microsoft"></use></svg><span>Microsoft Translator</span></div>
+              <!-- Google 暂时隐藏，保留代码
+              <div class="psel-item" data-value="google"><svg class="ic"><use href="#i-engine-google"></use></svg><span>Google Translate</span></div>
+              -->
+              <div class="psel-item selected" data-value="microsoft"><svg class="ic use-fill"><use href="#i-engine-microsoft"></use></svg><span>Microsoft Translator</span></div>
               <div class="psel-item" data-value="openai"><svg class="ic"><use href="#i-engine-openai"></use></svg><span>OpenAI</span></div>
             </div>
           </div>
@@ -692,10 +694,15 @@
       <h3>单词本</h3>
       <div class="field-row">
         <span class="field-label">存储路径:</span>
-        <div class="field-control path-field">
+        <div class="field-control">
           <input type="text" id="s-wordbookPath" readonly placeholder="点击浏览选择路径..." style="flex:1; cursor: pointer;">
           <button class="btn secondary" id="browseWordbookPathBtn" title="浏览..." style="padding: 4px 10px; font-size: 12px; white-space: nowrap;">浏览...</button>
-          <button class="btn secondary" id="restoreWordbookPathBtn" title="恢复默认路径" style="padding: 4px 10px; font-size: 12px; white-space: nowrap;">恢复默认</button>
+        </div>
+      </div>
+      <div class="field-row">
+        <span class="field-label"></span>
+        <div class="field-control">
+          <button class="btn secondary" id="restoreWordbookPathBtn" title="恢复默认路径" style="padding: 4px 10px; font-size: 12px;">恢复默认</button>
         </div>
       </div>
       <div class="path-hint">要使用 iCloud Drive、Google Drive、One Drive 和 Dropbox 等同步服务，只需将存储路径设置到相应的同步文件夹内即可。</div>
@@ -743,10 +750,6 @@
       <input type="hidden" id="s-openAiVoice" value="alloy">
     </div>
 
-    <div class="settings-actions">
-      <button class="btn" id="saveSettingsBtn">保存</button>
-      <button class="btn secondary" id="backBtn">返回</button>
-    </div>
   </div>
 
   <datalist id="fontList">
@@ -946,10 +949,53 @@
       if (visible) { showSettings(false); }
       else { vscode.postMessage({ type: 'getSettings' }); showSettings(true); }
     });
-    $('backBtn').addEventListener('click', () => showSettings(false));
-    $('saveSettingsBtn').addEventListener('click', () => {
-      vscode.postMessage({ type: 'saveSettings', settings: collectSettings() });
-    });
+
+    // ---- Instant save: each control change immediately saves to VS Code config ----
+    let _loading = false;
+    function bindInstantSave(id, key, isCheckbox) {
+      const el = $(id);
+      if (!el) return;
+      const evt = isCheckbox ? 'change' : (el.tagName === 'SELECT' ? 'change' : 'input');
+      el.addEventListener(evt, () => {
+        if (_loading) return;
+        const v = isCheckbox ? el.checked : el.value;
+        vscode.postMessage({ type: 'saveSetting', key, value: v });
+      });
+    }
+    bindInstantSave('s-mainLanguage', 'mainLanguage', false);
+    // Engine and TTS use psel (MutationObserver for instant save)
+    new MutationObserver(() => {
+      if (_loading) return;
+      vscode.postMessage({ type: 'saveSetting', key: 'defaultEngine', value: getPsel('s-defaultEngine') });
+    }).observe($('s-defaultEngine'), { attributes: true, attributeFilter: ['data-value'] });
+
+    new MutationObserver(() => {
+      if (_loading) return;
+      vscode.postMessage({ type: 'saveSetting', key: 'ttsEngine', value: getPsel('s-ttsEngine') });
+    }).observe($('s-ttsEngine'), { attributes: true, attributeFilter: ['data-value'] });
+    bindInstantSave('s-sourceLanguage', 'sourceLanguage', false);
+    bindInstantSave('s-targetLanguage', 'targetLanguage', false);
+    bindInstantSave('s-fontFamily', 'font.family', false);
+    bindInstantSave('s-fontPhonetic', 'font.phonetic', false);
+    bindInstantSave('s-stripPunctuation', 'textSelection.stripPunctuation', true);
+    bindInstantSave('s-preserveFormat', 'textSelection.preserveFormat', true);
+    bindInstantSave('s-autoCapture', 'textSelection.autoCapture', true);
+    bindInstantSave('s-regexFilter', 'textSelection.regexFilter', false);
+    bindInstantSave('s-hover', 'hover.enabled', true);
+    bindInstantSave('s-hoverDoc', 'hover.docTranslation', true);
+    bindInstantSave('s-autoRead', 'popup.autoRead', false);
+    bindInstantSave('s-popupPosition', 'popup.position', false);
+    bindInstantSave('s-autoCopy', 'popup.autoCopy', true);
+    bindInstantSave('s-ctxMenu', 'replace.contextMenu', true);
+    bindInstantSave('s-selectLangFirst', 'replace.selectLanguageFirst', true);
+    bindInstantSave('s-useLastLang', 'replace.useLastLanguage', true);
+    bindInstantSave('s-autoReplace', 'replace.autoReplace', true);
+    bindInstantSave('s-replaceSeparator', 'replaceSeparator', false);
+    bindInstantSave('s-wordAutoShow', 'wordOfDay.autoShow', true);
+    bindInstantSave('s-wordShowDef', 'wordOfDay.showDefinition', true);
+    bindInstantSave('s-historyMax', 'history.maxEntries', false);
+    bindInstantSave('s-autoTranslateDoc', 'autoTranslateDocument', true);
+    bindInstantSave('s-ctxMenuOnlySel', 'contextMenuOnlyWithSelection', true);
 
     function collectSettings() {
       return {
@@ -1191,6 +1237,12 @@
     function getPsel(id) { return $(id).dataset.value || ''; }
     initPsel('s-defaultEngine');
     initPsel('s-ttsEngine');
+    initPsel('m-openaiProvider');
+    initPsel('m-ttsProvider');
+
+    // Initial gear button visibility
+    updateEngineGear();
+    updateTtsGear();
 
     function esc(s) {
       return String(s ?? '').replace(/[&<>"']/g, (c) => ({
@@ -1345,7 +1397,6 @@
       } else if (msg.type === 'settings') {
         fillSettings(msg.settings || {}, msg.apiKey || '', msg.cacheSize);
       } else if (msg.type === 'saved') {
-        showSettings(false);
         vscode.postMessage({ type: 'getWords' });
       } else if (msg.type === 'cacheCleared') {
         $('cacheSize').textContent = msg.cacheSize || '0KB';
@@ -1358,7 +1409,8 @@
 
     // ---- Settings fill ----
     function fillSettings(s, apiKey, cacheSize) {
-      setPsel('s-defaultEngine', s.defaultEngine || 'google');
+      _loading = true;
+      setPsel('s-defaultEngine', s.defaultEngine || 'microsoft');
       $('s-mainLanguage').value = s.mainLanguage || 'zh-CN';
       $('s-sourceLanguage').value = s.sourceLanguage || 'auto';
       $('s-targetLanguage').value = s.targetLanguage || 'zh-CN';
@@ -1396,6 +1448,7 @@
       updateFontPreviews();
       updateEngineGear();
       updateTtsGear();
+      setTimeout(() => { _loading = false; }, 0);
     }
 
     // Populate language selects.
@@ -1432,6 +1485,10 @@
     $('s-fontFamily').addEventListener('input', updateFontPreviews);
     $('s-fontPhonetic').addEventListener('input', updateFontPreviews);
 
+    // ---- Modal helpers (declared early so all handlers can use them) ----
+    function openModal(id) { $(id).classList.add('visible'); }
+    function closeModal(id) { $(id).classList.remove('visible'); }
+
     // ---- Engine gear button: show/hide based on engine, open modal ----
     function updateEngineGear() {
       const engine = getPsel('s-defaultEngine');
@@ -1456,13 +1513,12 @@
       $('m-openaiTtsFields').style.display = v === 'openai' ? '' : 'none';
     }).observe($('m-ttsProvider'), { attributes: true, attributeFilter: ['data-value'] });
 
+    // ---- Engine gear button: open OpenAI modal ----
     $('engineGearBtn').addEventListener('click', () => {
-      const cfg = vscode.getState?.() || {};
       $('m-openaiModel').value = $('s-model').value || 'gpt-4o-mini';
       $('m-openaiBaseUrl').value = $('s-baseUrl').value || 'https://api.openai.com';
       $('m-openaiApiKey').value = $('s-apiKey').value || '';
       $('m-openaiApiKey').placeholder = $('s-apiKey').placeholder || 'sk-...';
-      // Check if current model is custom
       const knownModels = ['gpt-4o-mini', 'gpt-4o', 'gpt-4-turbo', 'gpt-3.5-turbo'];
       const currentModel = $('s-model').value;
       if (!knownModels.includes(currentModel) && currentModel) {
@@ -1477,6 +1533,20 @@
       openModal('openaiModal');
     });
 
+    // ---- TTS gear button: open TTS modal ----
+    $('ttsGearBtn').addEventListener('click', () => {
+      try {
+        setPsel('m-ttsProvider', getPsel('s-ttsEngine') || 'edge');
+        $('m-edgeVoice').value = $('s-edgeVoice').value || '';
+        $('m-edgeSpeed').value = $('s-edgeSpeed').value || '0%';
+        $('m-openaiTtsVoice').value = $('s-openAiVoice').value || 'alloy';
+      } catch (e) {
+        console.error('[ttsGearBtn]', e);
+      }
+      openModal('ttsModal');
+    });
+
+    // ---- OpenAI modal handlers ----
     $('m-openaiModel').addEventListener('change', (e) => {
       if (e.target.value === 'custom') {
         $('m-customModel').checked = true;
@@ -1507,33 +1577,35 @@
       }
       $('s-model').value = model;
       $('s-baseUrl').value = $('m-openaiBaseUrl').value || 'https://api.openai.com';
+      const baseUrl = $('m-openaiBaseUrl').value || 'https://api.openai.com';
+      vscode.postMessage({ type: 'saveSetting', key: 'openai.model', value: model });
+      vscode.postMessage({ type: 'saveSetting', key: 'openai.baseUrl', value: baseUrl });
       if ($('m-openaiApiKey').value) {
         $('s-apiKey').value = $('m-openaiApiKey').value;
+        vscode.postMessage({ type: 'saveSetting', key: 'openai.apiKey', value: $('m-openaiApiKey').value });
       }
       closeModal('openaiModal');
     });
 
-    // ---- TTS gear button: open TTS modal ----
-    $('ttsGearBtn').addEventListener('click', () => {
-      setPsel('m-ttsProvider', getPsel('s-ttsEngine') || 'edge');
-      $('m-edgeVoice').value = $('s-edgeVoice').value || '';
-      $('m-edgeSpeed').value = $('s-edgeSpeed').value || '0%';
-      $('m-openaiTtsVoice').value = $('s-openAiVoice').value || 'alloy';
-      openModal('ttsModal');
-    });
-
+    // ---- TTS modal handlers ----
     $('m-ttsOk').addEventListener('click', () => {
       const ttsProvider = getPsel('m-ttsProvider');
+      const edgeVoice = $('m-edgeVoice').value;
+      const edgeSpeed = $('m-edgeSpeed').value;
+      const openaiTtsVoice = $('m-openaiTtsVoice').value;
       setPsel('s-ttsEngine', ttsProvider);
-      $('s-edgeVoice').value = $('m-edgeVoice').value;
-      $('s-edgeSpeed').value = $('m-edgeSpeed').value;
-      $('s-openAiVoice').value = $('m-openaiTtsVoice').value;
+      $('s-edgeVoice').value = edgeVoice;
+      $('s-edgeSpeed').value = edgeSpeed;
+      $('s-openAiVoice').value = openaiTtsVoice;
+      updateTtsGear();
+      vscode.postMessage({ type: 'saveSetting', key: 'ttsEngine', value: ttsProvider });
+      vscode.postMessage({ type: 'saveSetting', key: 'tts.edge.voice', value: edgeVoice });
+      vscode.postMessage({ type: 'saveSetting', key: 'tts.edge.speed', value: edgeSpeed });
+      vscode.postMessage({ type: 'saveSetting', key: 'tts.openai.voice', value: openaiTtsVoice });
       closeModal('ttsModal');
     });
 
-    // ---- Modal helpers ----
-    function openModal(id) { $(id).classList.add('visible'); }
-    function closeModal(id) { $(id).classList.remove('visible'); }
+    // ---- Modal close handlers ----
     document.querySelectorAll('[data-close]').forEach((el) => {
       el.addEventListener('click', () => closeModal(el.dataset.close));
     });
@@ -1548,14 +1620,13 @@
       }
     });
 
-    initPsel('m-openaiProvider');
-    initPsel('m-ttsProvider');
-
     // ---- Restore font defaults ----
     $('restoreFontBtn').addEventListener('click', () => {
       $('s-fontFamily').value = '';
       $('s-fontPhonetic').value = '';
       updateFontPreviews();
+      vscode.postMessage({ type: 'saveSetting', key: 'font.family', value: '' });
+      vscode.postMessage({ type: 'saveSetting', key: 'font.phonetic', value: '' });
     });
 
     // ---- Wordbook path browse / restore ----
@@ -1566,7 +1637,7 @@
       vscode.postMessage({ type: 'browseWordbookPath' });
     });
     $('restoreWordbookPathBtn').addEventListener('click', () => {
-      vscode.postMessage({ type: 'saveSettings', settings: { 'wordbook.path': '' } });
+      vscode.postMessage({ type: 'saveSetting', key: 'wordbook.path', value: '' });
       $('s-wordbookPath').value = '';
     });
 

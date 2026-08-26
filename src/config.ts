@@ -27,7 +27,7 @@ export class Config {
   }
 
   get defaultEngine(): string {
-    return this.get('defaultEngine', 'google');
+    return this.get('defaultEngine', 'microsoft');
   }
 
   get sourceLanguage(): string {

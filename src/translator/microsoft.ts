@@ -4,7 +4,7 @@
  */
 
 import { DictItem, Translation, TranslationError, Translator } from '../types.js';
-import { describeError } from '../feedback.js';
+import { describeError, log } from '../feedback.js';
 import { fromMicrosoftCode, toMicrosoftCode } from '../languages.js';
 
 const TRANSLATOR_PAGE = 'https://www.bing.com/translator';
@@ -44,6 +44,11 @@ async function fetchConfig(): Promise<BingConfig> {
   }
   const [key, token] = JSON.parse(abuse) as [number, string];
   return { ig, iid, key, token, subdomain };
+}
+
+function invalidateConfig(): void {
+  cachedConfig = undefined;
+  configFetchedAt = 0;
 }
 
 async function getConfig(): Promise<BingConfig> {
@@ -122,15 +127,32 @@ async function callTranslate(
     throw new TranslationError(`Microsoft 翻译请求失败: HTTP ${res.status}`, 'microsoft', 'Microsoft Translator');
   }
 
-  const json = (await res.json()) as {
+  const rawBody = await res.text();
+  let json: {
     detectedLanguage?: { language: string };
     translations?: { text: string; to?: string; transliteration?: { text: string } }[];
   }[];
+  try {
+    json = JSON.parse(rawBody);
+  } catch {
+    log('[microsoft] Failed to parse response as JSON. Body:', rawBody.slice(0, 500));
+    throw new TranslationError('Microsoft 翻译返回为空(响应解析失败)', 'microsoft', 'Microsoft Translator');
+  }
 
   const item = json[0];
   const translation = item?.translations?.[0]?.text;
   if (translation === undefined) {
-    throw new TranslationError('Microsoft 翻译返回为空', 'microsoft', 'Microsoft Translator');
+    log('[microsoft] Translation field is undefined. Response:', rawBody.slice(0, 500));
+    // Check for common error responses
+    const errorObj = json as unknown as { statusCode?: number; message?: string; showTryAgainButton?: boolean };
+    if (errorObj.statusCode || errorObj.message) {
+      throw new TranslationError(
+        `Microsoft 翻译失败: ${errorObj.statusCode ?? ''} ${errorObj.message ?? ''}`.trim(),
+        'microsoft',
+        'Microsoft Translator',
+      );
+    }
+    throw new TranslationError('Microsoft 翻译返回为空(令牌可能已过期)', 'microsoft', 'Microsoft Translator');
   }
 
   return {
@@ -271,28 +293,48 @@ export const MicrosoftTranslator: Translator = {
   supportedTargetLanguages: ['zh-CN', 'zh-TW', 'en', 'ja', 'ko', 'fr', 'de', 'es', 'pt', 'pt-BR', 'ru', 'it', 'nl', 'pl', 'tr', 'vi', 'th', 'id', 'ar', 'hi', 'he', 'sv', 'da', 'no', 'fi', 'cs', 'hu', 'ro', 'bg', 'uk', 'el', 'sk', 'hr', 'sl', 'lt', 'lv', 'et', 'fa', 'ur', 'bn', 'ta', 'te', 'ca', 'fil', 'sw', 'cy', 'af', 'sq', 'am', 'az', 'eu', 'be', 'bs', 'eo', 'ga', 'gl', 'ka', 'kk', 'km', 'lo', 'mk', 'mn', 'my', 'ne', 'pa', 'si', 'sr', 'so', 'uz', 'zu'],
 
   async translate(text, srcLang, targetLang) {
-    const config = await getConfig();
     const from = toMicrosoftCode(srcLang);
     const to = toMicrosoftCode(targetLang);
 
-    // The dictionary lookup endpoint requires an explicit source language
-    // (it does not support "auto" detection). So when the source language is
-    // auto, we run translation first to get the detected language, then use
-    // that for the dictionary lookup. Otherwise, both run in parallel.
+    // First attempt with cached config; on empty result, invalidate and retry once.
     let transResult: TranslationResult;
     let dict: DictItem[] | undefined;
 
-    if (from === 'auto-detect' || !from) {
-      transResult = await callTranslate(text, from, to, config);
-      const detected = transResult.detectedLang;
-      if (detected) {
-        dict = await callLookup(text, detected, to, config);
+    try {
+      const config = await getConfig();
+      if (from === 'auto-detect' || !from) {
+        transResult = await callTranslate(text, from, to, config);
+        const detected = transResult.detectedLang;
+        if (detected) {
+          dict = await callLookup(text, detected, to, config);
+        }
+      } else {
+        [transResult, dict] = await Promise.all([
+          callTranslate(text, from, to, config),
+          callLookup(text, from, to, config),
+        ]);
       }
-    } else {
-      [transResult, dict] = await Promise.all([
-        callTranslate(text, from, to, config),
-        callLookup(text, from, to, config),
-      ]);
+    } catch (error) {
+      // If the error indicates an empty/expired token response, retry once with a fresh config.
+      if (error instanceof TranslationError && /返回为空/.test(error.message)) {
+        log('[microsoft] Translation returned empty, retrying with fresh token...');
+        invalidateConfig();
+        const freshConfig = await getConfig();
+        if (from === 'auto-detect' || !from) {
+          transResult = await callTranslate(text, from, to, freshConfig);
+          const detected = transResult.detectedLang;
+          if (detected) {
+            dict = await callLookup(text, detected, to, freshConfig);
+          }
+        } else {
+          [transResult, dict] = await Promise.all([
+            callTranslate(text, from, to, freshConfig),
+            callLookup(text, from, to, freshConfig),
+          ]);
+        }
+      } else {
+        throw error;
+      }
     }
 
     const detectedLang = transResult.detectedLang;

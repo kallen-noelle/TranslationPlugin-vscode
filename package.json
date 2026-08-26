@@ -2,7 +2,7 @@
   "name": "translation-plugin-vscode",
   "displayName": "Translation",
   "description": "Translation plugin for Visual Studio Code. Multiple translation engines, TTS, word book, translation dialog and more.",
-  "version": "0.1.26",
+  "version": "0.1.32",
   "publisher": "translation-plugin",
   "license": "MIT",
   "type": "module",
@@ -151,11 +151,13 @@
       "editor/context": [
         {
           "command": "translation.translate",
-          "group": "1_translation@1"
+          "group": "1_translation@1",
+          "when": "!translation.contextMenuRequiresSelection || editorHasSelection"
         },
         {
           "command": "translation.replaceWithTranslation",
-          "group": "1_translation@2"
+          "group": "1_translation@2",
+          "when": "!translation.contextMenuRequiresSelection || editorHasSelection"
         }
       ],
       "view/title": [],
@@ -203,7 +205,7 @@
             "Microsoft Translator (free)",
             "OpenAI Translator (requires API key)"
           ],
-          "default": "google",
+          "default": "microsoft",
           "description": "Default translation engine."
         },
         "translation.sourceLanguage": {
@@ -414,7 +416,7 @@
         },
         "translation.autoTranslateDocument": {
           "type": "boolean",
-          "default": false,
+          "default": true,
           "description": "Automatically translate documents when opened."
         },
         "translation.contextMenuOnlyWithSelection": {

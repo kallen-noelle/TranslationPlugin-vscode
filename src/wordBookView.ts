@@ -79,6 +79,10 @@ class WordBookWebviewProvider implements vscode.WebviewViewProvider {
         this.post({ type: 'saved' });
         break;
 
+      case 'saveSetting':
+        await this.saveSetting(msg.key as string, msg.value);
+        break;
+
       case 'command': {
         const command = String(msg.command ?? '');
         if (command) {
@@ -170,7 +174,7 @@ class WordBookWebviewProvider implements vscode.WebviewViewProvider {
     this.post({
       type: 'settings',
       settings: {
-        defaultEngine: cfg.get('defaultEngine', 'google'),
+        defaultEngine: cfg.get('defaultEngine', 'microsoft'),
         mainLanguage: cfg.get('mainLanguage', 'zh-CN'),
         sourceLanguage: cfg.get('sourceLanguage', 'auto'),
         targetLanguage: cfg.get('targetLanguage', 'zh-CN'),
@@ -195,7 +199,7 @@ class WordBookWebviewProvider implements vscode.WebviewViewProvider {
         'wordbook.path': cfg.get('wordbook.path', ''),
         'wordbook.resolvedPath': resolveWordBookPath(cfg.get('wordbook.path', '')),
         'history.maxEntries': cfg.get('history.maxEntries', 100),
-        autoTranslateDocument: cfg.get('autoTranslateDocument', false),
+        autoTranslateDocument: cfg.get('autoTranslateDocument', true),
         contextMenuOnlyWithSelection: cfg.get('contextMenuOnlyWithSelection', true),
         ttsEngine: cfg.get('ttsEngine', 'edge'),
         'tts.edge.voice': cfg.get('tts.edge.voice', ''),
@@ -234,7 +238,29 @@ class WordBookWebviewProvider implements vscode.WebviewViewProvider {
       await setActiveEngine(this.ctx, engineId);
       updateStatusBar();
     }
-    void vscode.window.showInformationMessage('设置已保存');
+  }
+
+  private async saveSetting(key: string, value: unknown): Promise<void> {
+    if (!key) return;
+    if (key === 'history.maxEntries' && typeof value === 'string') {
+      value = parseInt(value, 10);
+    }
+    if (key === 'openai.apiKey') {
+      if (typeof value === 'string' && value) {
+        await Config.get().setApiKey('openai', value);
+      }
+      return;
+    }
+    const cfg = vscode.workspace.getConfiguration('translation');
+    try {
+      await cfg.update(key, value, vscode.ConfigurationTarget.Global);
+    } catch (error) {
+      void vscode.window.showErrorMessage(`保存配置失败: ${describeError(error)}`);
+    }
+    if (key === 'defaultEngine' && typeof value === 'string') {
+      await setActiveEngine(this.ctx, value);
+      updateStatusBar();
+    }
   }
 }
 

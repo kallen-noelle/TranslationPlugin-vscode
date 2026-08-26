@@ -79,6 +79,11 @@ async function translateSelection(c: CommandContext, mode: ExtractMode = Extract
     return;
   }
 
+  // Auto-copy translation to clipboard if enabled.
+  if (config.get('popup.autoCopy', false) && result.translation) {
+    await vscode.env.clipboard.writeText(result.translation);
+  }
+
   // Pre-fill the dialog if it is open.
   TranslationDialogPanel.postTranslation(extracted.text, result.srcLang, result.targetLang);
 
@@ -147,7 +152,7 @@ async function replaceWithTranslation(): Promise<void> {
 // Translate Document / Comments
 // ---------------------------------------------------------------------------
 
-async function translateDocument(): Promise<void> {
+async function translateDocument(c: CommandContext): Promise<void> {
   const editor = requireEditor();
   if (!editor) {
     return;
@@ -167,15 +172,19 @@ async function translateDocument(): Promise<void> {
       }
       return await translate(text, src, tgt);
     } catch (error) {
-      await showTranslationError(error, { retry: () => void translateDocument() });
+      await showTranslationError(error, { retry: () => void translateDocument(c) });
       return undefined;
     }
   });
   if (!result) {
     return;
   }
+  // Auto-copy translation to clipboard if enabled.
+  if (Config.get().get('popup.autoCopy', false) && result.translation) {
+    await vscode.env.clipboard.writeText(result.translation);
+  }
+  TranslationDialogPanel.show(c.ctx);
   TranslationDialogPanel.postTranslation(text, result.srcLang, result.targetLang);
-  void vscode.window.showInformationMessage('文档翻译完成(请查看弹窗)');
 }
 
 async function translateComments(): Promise<void> {
@@ -389,7 +398,7 @@ export function registerCommands(c: CommandContext): vscode.Disposable[] {
     vscode.commands.registerCommand('translation.showDialog', () => showDialog(c)),
     vscode.commands.registerCommand('translation.translate', () => translateSelection(c)),
     vscode.commands.registerCommand('translation.replaceWithTranslation', () => replaceWithTranslation()),
-    vscode.commands.registerCommand('translation.translateDocument', () => translateDocument()),
+    vscode.commands.registerCommand('translation.translateDocument', () => translateDocument(c)),
     vscode.commands.registerCommand('translation.translateComments', () => translateComments()),
     vscode.commands.registerCommand('translation.switchEngine', () => switchEngine(c)),
     vscode.commands.registerCommand('translation.tts', () => tts()),
