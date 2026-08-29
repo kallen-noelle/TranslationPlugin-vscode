@@ -3,10 +3,10 @@
   "displayName": "Translation",
   "description": "Translation plugin for Visual Studio Code. Multiple translation engines, TTS, word book, translation dialog and more.",
   "version": "0.1.33",
-  "publisher": "translation-plugin",
+  "publisher": "kallen-noelle",
   "repository": {
     "type": "git",
-    "url": "https://github.com/YiiGuxing/TranslationPlugin.git"
+    "url": "https://github.com/kallen-noelle/Translation.git"
   },
   "license": "MIT",
   "type": "module",
