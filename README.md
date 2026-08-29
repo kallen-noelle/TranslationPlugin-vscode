@@ -1,6 +1,16 @@
 # Translation
 
-Visual Studio Code 翻译插件,仿照 [IntelliJ 平台的 TranslationPlugin](https://github.com/YiiGuxing/TranslationPlugin) 制作。支持多翻译引擎、多语言互译、TTS 朗读、翻译弹窗、生词本、悬停翻译等。
+Visual Studio Code 翻译插件。支持多翻译引擎、多语言互译、TTS 朗读、翻译弹窗、生词本、悬停翻译等。
+
+## 演示
+
+| 功能 | 演示 |
+|------|------|
+| 翻译弹窗 | ![翻译弹窗演示](media/usage/5.gif) |
+| 悬停翻译 | ![悬停翻译演示](media/usage/1.gif) |
+| 每日一词 | ![每日一词演示](media/usage/5.gif) |
+| 单词搜索 | ![单词搜索演示](media/usage/4.gif) |
+| 函数文档翻译 | ![函数文档翻译演示](media/usage/3.png) |
 
 ## 功能
 
@@ -20,24 +30,6 @@ Visual Studio Code 翻译插件,仿照 [IntelliJ 平台的 TranslationPlugin](ht
 - **每日一词**
 - **状态栏引擎指示器**,点击快速切换引擎
 
-## 安装
-
-### 从源码构建 `.vsix`
-
-```bash
-npm install
-npm run package        # 产出 translation-plugin-vscode-0.1.0.vsix
-```
-
-然后:扩展视图 → `...` → **Install from VSIX**。
-
-### 开发模式
-
-```bash
-npm install
-npm run compile
-# 按 F5 启动 Extension Development Host
-```
 
 ## 使用
 
@@ -61,7 +53,7 @@ npm run compile
 
 | 配置项 | 说明 | 默认 |
 |--------|------|------|
-| `translation.defaultEngine` | 默认翻译引擎 | `google` |
+| `translation.defaultEngine` | 默认翻译引擎 | `microsoft` |
 | `translation.sourceLanguage` | 源语言(`auto` 自动检测) | `auto` |
 | `translation.targetLanguage` | 目标语言 | `zh-CN` |
 | `translation.replaceSeparator` | 替换为译文时的命名风格 | `original` |
@@ -75,11 +67,11 @@ npm run compile
 
 ### API Key
 
-运行命令 **`Translation: Configure`** 可配置 API Key(通过系统密钥库保存,不会写入文件)。OpenAI 兼容引擎需要 API Key。
+运行命令 **`Translation: Open Settings`** 可配置 API Key(通过系统密钥库保存,不会写入文件)。OpenAI 兼容引擎需要 API Key。
 
 ### 使用 DeepSeek 作为翻译引擎
 
-`translation.openai.baseUrl` 设为 `https://api.deepseek.com`,`translation.openai.model` 设为 `deepseek-chat`,然后在 `Translation: Configure` 中填入 DeepSeek API Key 即可。
+`translation.openai.baseUrl` 设为 `https://api.deepseek.com`,`translation.openai.model` 设为 `deepseek-chat`,然后在 `Translation: Open Settings` 中填入 DeepSeek API Key 即可。
 
 ## 翻译引擎说明
 
@@ -99,8 +91,6 @@ npm run compile
 - **打开方式**:点击左侧活动栏的 **Translation** 图标(类似原插件的工具窗口);或在命令面板运行 `Translation: Word Book`。
 - **操作**:每个词条支持 朗读 / 复制译文 / 删除(右键菜单)。
 - **自定义位置**:如需指向其它数据库文件/目录,设置 `translation.wordbook.path`。
-
-> 依赖 `better-sqlite3`(原生模块,跨平台预编译,通过 N-API 保证 ABI 兼容),因此插件体积约 11MB。
 
 ## 已知限制
 

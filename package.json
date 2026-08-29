@@ -4,6 +4,10 @@
   "description": "Translation plugin for Visual Studio Code. Multiple translation engines, TTS, word book, translation dialog and more.",
   "version": "0.1.33",
   "publisher": "translation-plugin",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/YiiGuxing/TranslationPlugin.git"
+  },
   "license": "MIT",
   "type": "module",
   "icon": "media/icon.png",
