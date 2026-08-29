@@ -2,7 +2,7 @@
   "name": "translation-plugin-vscode",
   "displayName": "Translation",
   "description": "Translation plugin for Visual Studio Code. Multiple translation engines, TTS, word book, translation dialog and more.",
-  "version": "0.1.32",
+  "version": "0.1.33",
   "publisher": "translation-plugin",
   "license": "MIT",
   "type": "module",

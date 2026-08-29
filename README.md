@@ -24,18 +24,9 @@ Visual Studio Code 翻译插件,仿照 [IntelliJ 平台的 TranslationPlugin](ht
 
 ### 从源码构建 `.vsix`
 
-> **重要**:必须使用 `vsce package`（不带 `--no-dependencies`）打包，因为 `better-sqlite3` 和 `ws` 是运行时依赖，必须包含在 VSIX 中。使用 `--no-dependencies` 会导致扩展激活失败（命令找不到、单词本一直加载）。
-
 ```bash
-# 1. 安装依赖
 npm install
-
-# 2. 编译 TypeScript
-npm run compile
-
-# 3. 打包 VSIX（包含运行时依赖）
-npx vsce package
-# 产出 translation-plugin-vscode-<version>.vsix
+npm run package        # 产出 translation-plugin-vscode-0.1.0.vsix
 ```
 
 然后:扩展视图 → `...` → **Install from VSIX**。

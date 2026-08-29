@@ -152,8 +152,7 @@ class WordBookWebviewProvider implements vscode.WebviewViewProvider {
         });
         if (picked && picked.length > 0) {
           const p = picked[0].fsPath;
-          await vscode.workspace.getConfiguration('translation').update('wordbook.path', p, vscode.ConfigurationTarget.Global);
-          this.post({ type: 'wordbookPathChanged', path: resolveWordBookPath(p) });
+          this.post({ type: 'wordbookPathChanged', path: resolveWordBookPath(p), rawPath: p });
         }
         break;
       }

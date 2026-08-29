@@ -750,6 +750,12 @@
       <input type="hidden" id="s-openAiVoice" value="alloy">
     </div>
 
+    <!-- 保存/取消按钮栏 -->
+    <div class="settings-actions" style="position: sticky; bottom: 0; background: var(--bg); border-top: 1px solid var(--border); padding: 10px 14px;">
+      <button class="btn secondary" id="cancelSettingsBtn">取消</button>
+      <button class="btn" id="saveSettingsBtn">保存</button>
+    </div>
+
   </div>
 
   <datalist id="fontList">
@@ -950,52 +956,14 @@
       else { vscode.postMessage({ type: 'getSettings' }); showSettings(true); }
     });
 
-    // ---- Instant save: each control change immediately saves to VS Code config ----
-    let _loading = false;
-    function bindInstantSave(id, key, isCheckbox) {
-      const el = $(id);
-      if (!el) return;
-      const evt = isCheckbox ? 'change' : (el.tagName === 'SELECT' ? 'change' : 'input');
-      el.addEventListener(evt, () => {
-        if (_loading) return;
-        const v = isCheckbox ? el.checked : el.value;
-        vscode.postMessage({ type: 'saveSetting', key, value: v });
-      });
-    }
-    bindInstantSave('s-mainLanguage', 'mainLanguage', false);
-    // Engine and TTS use psel (MutationObserver for instant save)
-    new MutationObserver(() => {
-      if (_loading) return;
-      vscode.postMessage({ type: 'saveSetting', key: 'defaultEngine', value: getPsel('s-defaultEngine') });
-    }).observe($('s-defaultEngine'), { attributes: true, attributeFilter: ['data-value'] });
-
-    new MutationObserver(() => {
-      if (_loading) return;
-      vscode.postMessage({ type: 'saveSetting', key: 'ttsEngine', value: getPsel('s-ttsEngine') });
-    }).observe($('s-ttsEngine'), { attributes: true, attributeFilter: ['data-value'] });
-    bindInstantSave('s-sourceLanguage', 'sourceLanguage', false);
-    bindInstantSave('s-targetLanguage', 'targetLanguage', false);
-    bindInstantSave('s-fontFamily', 'font.family', false);
-    bindInstantSave('s-fontPhonetic', 'font.phonetic', false);
-    bindInstantSave('s-stripPunctuation', 'textSelection.stripPunctuation', true);
-    bindInstantSave('s-preserveFormat', 'textSelection.preserveFormat', true);
-    bindInstantSave('s-autoCapture', 'textSelection.autoCapture', true);
-    bindInstantSave('s-regexFilter', 'textSelection.regexFilter', false);
-    bindInstantSave('s-hover', 'hover.enabled', true);
-    bindInstantSave('s-hoverDoc', 'hover.docTranslation', true);
-    bindInstantSave('s-autoRead', 'popup.autoRead', false);
-    bindInstantSave('s-popupPosition', 'popup.position', false);
-    bindInstantSave('s-autoCopy', 'popup.autoCopy', true);
-    bindInstantSave('s-ctxMenu', 'replace.contextMenu', true);
-    bindInstantSave('s-selectLangFirst', 'replace.selectLanguageFirst', true);
-    bindInstantSave('s-useLastLang', 'replace.useLastLanguage', true);
-    bindInstantSave('s-autoReplace', 'replace.autoReplace', true);
-    bindInstantSave('s-replaceSeparator', 'replaceSeparator', false);
-    bindInstantSave('s-wordAutoShow', 'wordOfDay.autoShow', true);
-    bindInstantSave('s-wordShowDef', 'wordOfDay.showDefinition', true);
-    bindInstantSave('s-historyMax', 'history.maxEntries', false);
-    bindInstantSave('s-autoTranslateDoc', 'autoTranslateDocument', true);
-    bindInstantSave('s-ctxMenuOnlySel', 'contextMenuOnlyWithSelection', true);
+    // ---- Settings are saved via Save button (no instant save) ----
+    $('saveSettingsBtn').addEventListener('click', () => {
+      vscode.postMessage({ type: 'saveSettings', settings: collectSettings() });
+      showSettings(false);
+    });
+    $('cancelSettingsBtn').addEventListener('click', () => {
+      showSettings(false);
+    });
 
     function collectSettings() {
       return {
@@ -1021,6 +989,7 @@
         replaceSeparator: $('s-replaceSeparator').value,
         'wordOfDay.autoShow': $('s-wordAutoShow').checked,
         'wordOfDay.showDefinition': $('s-wordShowDef').checked,
+        'wordbook.path': $('s-wordbookPath').dataset.rawPath || '',
         'history.maxEntries': parseInt($('s-historyMax').value, 10),
         autoTranslateDocument: $('s-autoTranslateDoc').checked,
         contextMenuOnlyWithSelection: $('s-ctxMenuOnlySel').checked,
@@ -1208,8 +1177,8 @@
         item.addEventListener('click', (e) => {
           e.preventDefault();
           e.stopPropagation();
-          setPsel(id, item.dataset.value);
           el.classList.remove('open');
+          setPsel(id, item.dataset.value);
         });
       });
     }
@@ -1402,6 +1371,7 @@
         $('cacheSize').textContent = msg.cacheSize || '0KB';
       } else if (msg.type === 'wordbookPathChanged') {
         $('s-wordbookPath').value = msg.path || '';
+        $('s-wordbookPath').dataset.rawPath = msg.rawPath || '';
       } else if (msg.type === 'historyCleared') {
         void 0;
       }
@@ -1409,7 +1379,6 @@
 
     // ---- Settings fill ----
     function fillSettings(s, apiKey, cacheSize) {
-      _loading = true;
       setPsel('s-defaultEngine', s.defaultEngine || 'microsoft');
       $('s-mainLanguage').value = s.mainLanguage || 'zh-CN';
       $('s-sourceLanguage').value = s.sourceLanguage || 'auto';
@@ -1433,6 +1402,7 @@
       $('s-wordAutoShow').checked = !!s['wordOfDay.autoShow'];
       $('s-wordShowDef').checked = !!s['wordOfDay.showDefinition'];
       $('s-wordbookPath').value = s['wordbook.resolvedPath'] || s['wordbook.path'] || '';
+      $('s-wordbookPath').dataset.rawPath = s['wordbook.path'] || '';
       $('s-historyMax').value = String(s['history.maxEntries'] || 100);
       $('s-autoTranslateDoc').checked = !!s.autoTranslateDocument;
       $('s-ctxMenuOnlySel').checked = !!s.contextMenuOnlyWithSelection;
@@ -1448,7 +1418,6 @@
       updateFontPreviews();
       updateEngineGear();
       updateTtsGear();
-      setTimeout(() => { _loading = false; }, 0);
     }
 
     // Populate language selects.
@@ -1577,12 +1546,8 @@
       }
       $('s-model').value = model;
       $('s-baseUrl').value = $('m-openaiBaseUrl').value || 'https://api.openai.com';
-      const baseUrl = $('m-openaiBaseUrl').value || 'https://api.openai.com';
-      vscode.postMessage({ type: 'saveSetting', key: 'openai.model', value: model });
-      vscode.postMessage({ type: 'saveSetting', key: 'openai.baseUrl', value: baseUrl });
       if ($('m-openaiApiKey').value) {
         $('s-apiKey').value = $('m-openaiApiKey').value;
-        vscode.postMessage({ type: 'saveSetting', key: 'openai.apiKey', value: $('m-openaiApiKey').value });
       }
       closeModal('openaiModal');
     });
@@ -1598,10 +1563,6 @@
       $('s-edgeSpeed').value = edgeSpeed;
       $('s-openAiVoice').value = openaiTtsVoice;
       updateTtsGear();
-      vscode.postMessage({ type: 'saveSetting', key: 'ttsEngine', value: ttsProvider });
-      vscode.postMessage({ type: 'saveSetting', key: 'tts.edge.voice', value: edgeVoice });
-      vscode.postMessage({ type: 'saveSetting', key: 'tts.edge.speed', value: edgeSpeed });
-      vscode.postMessage({ type: 'saveSetting', key: 'tts.openai.voice', value: openaiTtsVoice });
       closeModal('ttsModal');
     });
 
@@ -1625,8 +1586,6 @@
       $('s-fontFamily').value = '';
       $('s-fontPhonetic').value = '';
       updateFontPreviews();
-      vscode.postMessage({ type: 'saveSetting', key: 'font.family', value: '' });
-      vscode.postMessage({ type: 'saveSetting', key: 'font.phonetic', value: '' });
     });
 
     // ---- Wordbook path browse / restore ----
@@ -1637,7 +1596,6 @@
       vscode.postMessage({ type: 'browseWordbookPath' });
     });
     $('restoreWordbookPathBtn').addEventListener('click', () => {
-      vscode.postMessage({ type: 'saveSetting', key: 'wordbook.path', value: '' });
       $('s-wordbookPath').value = '';
     });
 
