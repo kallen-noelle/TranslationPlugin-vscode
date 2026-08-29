@@ -1200,7 +1200,8 @@
       btnUse.setAttribute('href', itemUse);
       const btnIcon = el.querySelector('.psel-ic');
       const itemIcon = item.querySelector('.ic');
-      btnIcon.className = itemIcon.className.replace(/\bic\b/, 'ic psel-ic');
+      const itemCls = itemIcon.getAttribute('class') || '';
+      btnIcon.setAttribute('class', itemCls.replace(/\bic\b/, 'ic psel-ic'));
       el.querySelectorAll('.psel-item').forEach((i) => i.classList.toggle('selected', i === item));
     }
     function getPsel(id) { return $(id).dataset.value || ''; }
