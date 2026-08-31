@@ -7,6 +7,7 @@ import { getActiveEngineId } from '../translator/registry.js';
 import { Store, saveTranslationToWordBook } from '../store.js';
 import { describeError } from '../feedback.js';
 import { refreshWordBookView } from '../wordBookView.js';
+import { Translation } from '../types.js';
 
 let instance: TranslationDialogPanel | undefined;
 
@@ -39,6 +40,12 @@ export class TranslationDialogPanel extends BasePanel {
       instance.post({ type: 'setText', text: original });
       instance.post({ type: 'setLanguages', srcLang, targetLang });
     }
+  }
+
+  /** Shows the dialog and directly renders an already-translated result. */
+  static showWithResult(ctx: vscode.ExtensionContext, result: Translation): void {
+    const panel = TranslationDialogPanel.show(ctx);
+    panel.post({ type: 'preFillResult', result });
   }
 
   private sendInitialState(): void {

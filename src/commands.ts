@@ -183,8 +183,7 @@ async function translateDocument(c: CommandContext): Promise<void> {
   if (Config.get().get('popup.autoCopy', false) && result.translation) {
     await vscode.env.clipboard.writeText(result.translation);
   }
-  TranslationDialogPanel.show(c.ctx);
-  TranslationDialogPanel.postTranslation(text, result.srcLang, result.targetLang);
+  TranslationDialogPanel.showWithResult(c.ctx, result);
 }
 
 async function translateComments(): Promise<void> {

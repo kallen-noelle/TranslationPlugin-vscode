@@ -10,7 +10,9 @@ Visual Studio Code 翻译插件。支持多翻译引擎、多语言互译、TTS 
 | 悬停翻译 | ![悬停翻译演示](media/usage/1.gif) |
 | 每日一词 | ![每日一词演示](media/usage/5.gif) |
 | 单词搜索 | ![单词搜索演示](media/usage/4.gif) |
+| 文档翻译 | ![文档翻译演示](media/usage/6.gif) |
 | 函数文档翻译 | ![函数文档翻译演示](media/usage/3.png) |
+
 
 ## 功能
 

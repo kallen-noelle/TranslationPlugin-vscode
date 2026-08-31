@@ -328,6 +328,15 @@
             doTranslate();
           }
           break;
+        case 'preFillResult': {
+          const r = msg.result;
+          if (!r) break;
+          $('input').value = r.original || '';
+          if (r.srcLang) $('srcLang').value = r.srcLang;
+          if (r.targetLang) $('targetLang').value = r.targetLang;
+          renderResult(r);
+          break;
+        }
         case 'result':
           renderResult(msg.result);
           break;
