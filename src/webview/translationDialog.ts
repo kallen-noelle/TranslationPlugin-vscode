@@ -15,9 +15,13 @@ let instance: TranslationDialogPanel | undefined;
  * The translation dialog panel (a webview).
  */
 export class TranslationDialogPanel extends BasePanel {
+  private ready = false;
+  /** ready 到达前到达的 setText 消息暂存,等 languages/init 之后再 flush */
+  private pendingSetText?: { text: string; srcLang?: string; targetLang?: string };
+
   private constructor(ctx: vscode.ExtensionContext) {
     super(ctx, 'translation.dialog', 'Translation', vscode.ViewColumn.Beside);
-    this.setHtmlFromMedia('translationDialog.html');
+    this.loadWebviewBundle('TranslationDialog', 'translationDialog.html');
     this.panel.onDidChangeViewState((e) => {
       if (e.webviewPanel.visible) {
         this.sendInitialState();
@@ -37,8 +41,7 @@ export class TranslationDialogPanel extends BasePanel {
   /** Sends a translation result to the dialog. */
   static postTranslation(original: string, srcLang: string, targetLang: string): void {
     if (instance && !instance.isDisposed) {
-      instance.post({ type: 'setText', text: original });
-      instance.post({ type: 'setLanguages', srcLang, targetLang });
+      instance.queueSetText(original, srcLang, targetLang);
     }
   }
 
@@ -48,7 +51,30 @@ export class TranslationDialogPanel extends BasePanel {
     panel.post({ type: 'preFillResult', result });
   }
 
+  private queueSetText(text: string, srcLang?: string, targetLang?: string): void {
+    if (!this.ready) {
+      // Webview 还没 ready: 暂存,等 sendInitialState 之后再发,确保 languages 下拉框已填充
+      this.pendingSetText = { text, srcLang, targetLang };
+      return;
+    }
+    this.flushSetText(text, srcLang, targetLang);
+  }
+
+  private flushSetText(text: string, srcLang?: string, targetLang?: string): void {
+    this.post({ type: 'setText', text });
+    if (srcLang || targetLang) {
+      // 通过 init 消息覆盖用户上次选的语言对
+      this.post({
+        type: 'init',
+        srcLang: srcLang ?? Store.get().getLastSourceLanguage(),
+        targetLang: targetLang ?? Store.get().getLastTargetLanguage(),
+        activeEngine: getActiveEngineId(),
+      });
+    }
+  }
+
   private sendInitialState(): void {
+    this.ready = true;
     this.post({
       type: 'languages',
       languages: LANGUAGES.map((l) => ({ code: l.code, name: l.name, nameZh: l.nameZh })),
@@ -60,6 +86,14 @@ export class TranslationDialogPanel extends BasePanel {
       activeEngine: getActiveEngineId(),
     });
     this.post({ type: 'history', entries: Store.get().getHistory() });
+
+    // flush 暂存的 setText: 此时 languages/init 都已发,HTML 能正确渲染
+    if (this.pendingSetText) {
+      const p = this.pendingSetText;
+      this.pendingSetText = undefined;
+      // 等一个事件循环周期让前面三条消息先到
+      setTimeout(() => this.flushSetText(p.text, p.srcLang, p.targetLang), 0);
+    }
   }
 
   protected async onMessage(msg: WebviewMessage): Promise<void> {

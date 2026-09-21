@@ -14,7 +14,7 @@ let instance: WordDetailsPanel | undefined;
 export class WordDetailsPanel extends BasePanel {
   private constructor(ctx: vscode.ExtensionContext, entry: WordBookEntry) {
     super(ctx, 'translation.wordDetails', 'Word Details', vscode.ViewColumn.Beside);
-    this.setHtmlFromMedia('wordDetails.html');
+    this.loadWebviewBundle('WordDetails', 'wordDetails.html');
     this.post({ type: 'entry', entry });
   }
 

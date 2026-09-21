@@ -17,6 +17,7 @@ import { resolveWordBookPath } from './wordbookDb.js';
 import { setActiveEngine } from './translator/registry.js';
 import { updateStatusBar } from './statusbar.js';
 import { getDiskCacheSize, evictAllDiskCaches, formatByteSize } from './cacheService.js';
+import { transformBundleHtml, WEBVIEW_BUNDLE_DIR, WEBVIEW_HTML_SUBDIR } from './webview/panel.js';
 
 interface WordBookMessage {
   type: string;
@@ -40,12 +41,21 @@ class WordBookWebviewProvider implements vscode.WebviewViewProvider {
       localResourceRoots: [
         vscode.Uri.joinPath(this.ctx.extensionUri, 'media'),
         vscode.Uri.joinPath(this.ctx.extensionUri, 'src', 'webview', 'media'),
+        vscode.Uri.joinPath(this.ctx.extensionUri, WEBVIEW_BUNDLE_DIR),
       ],
     };
 
-    const htmlFile = path.join(this.ctx.extensionPath, 'src', 'webview', 'media', 'wordBookWebview.html');
-    const html = fs.readFileSync(htmlFile, 'utf-8').replaceAll('{{MEDIA}}', this.mediaBaseUri);
-    webviewView.webview.html = html;
+    // Prefer Vite-built React bundle; fall back to legacy media HTML
+    const bundleHtmlPath = path.join(this.ctx.extensionPath, WEBVIEW_BUNDLE_DIR, WEBVIEW_HTML_SUBDIR, 'WordBook.html');
+    if (fs.existsSync(bundleHtmlPath)) {
+      const raw = fs.readFileSync(bundleHtmlPath, 'utf-8');
+      const html = transformBundleHtml(raw, bundleHtmlPath, webviewView.webview, this.ctx.extensionUri);
+      webviewView.webview.html = html;
+    } else {
+      const legacyPath = path.join(this.ctx.extensionPath, 'src', 'webview', 'media', 'wordBookWebview.html');
+      const html = fs.readFileSync(legacyPath, 'utf-8').replaceAll('{{MEDIA}}', this.mediaBaseUri);
+      webviewView.webview.html = html;
+    }
 
     webviewView.webview.onDidReceiveMessage((msg: WordBookMessage) => {
       void this.onMessage(msg);

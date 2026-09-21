@@ -14,5 +14,5 @@ node_modules/@resvg/**
 src/**/*.ts
 src/**/*.map
 !src/webview/media/**
-# Exclude React webview-ui (not used in current version)
+# React webview source (built via Vite into out/webview-assets/)
 webview-ui/**

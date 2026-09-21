@@ -296,57 +296,58 @@ export const MicrosoftTranslator: Translator = {
     const from = toMicrosoftCode(srcLang);
     const to = toMicrosoftCode(targetLang);
 
-    // First attempt with cached config; on empty result, invalidate and retry once.
-    let transResult: TranslationResult;
-    let dict: DictItem[] | undefined;
-
-    try {
-      const config = await getConfig();
-      if (from === 'auto-detect' || !from) {
-        transResult = await callTranslate(text, from, to, config);
-        const detected = transResult.detectedLang;
-        if (detected) {
-          dict = await callLookup(text, detected, to, config);
-        }
-      } else {
-        [transResult, dict] = await Promise.all([
-          callTranslate(text, from, to, config),
-          callLookup(text, from, to, config),
-        ]);
-      }
-    } catch (error) {
-      // If the error indicates an empty/expired token response, retry once with a fresh config.
-      if (error instanceof TranslationError && /返回为空/.test(error.message)) {
-        log('[microsoft] Translation returned empty, retrying with fresh token...');
+    // 最多重试 3 次: 初次 + 2 次刷新 token
+    let lastError: unknown;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      // 第 2、3 次重试前强制刷新 token
+      if (attempt > 0) {
         invalidateConfig();
-        const freshConfig = await getConfig();
+        await new Promise((r) => setTimeout(r, 200 * attempt));
+        log(`[microsoft] retry #${attempt + 1} with fresh token...`);
+      }
+      try {
+        const config = await getConfig();
+        let transResult: TranslationResult;
+        let dict: DictItem[] | undefined;
+
         if (from === 'auto-detect' || !from) {
-          transResult = await callTranslate(text, from, to, freshConfig);
+          transResult = await callTranslate(text, from, to, config);
           const detected = transResult.detectedLang;
           if (detected) {
-            dict = await callLookup(text, detected, to, freshConfig);
+            dict = await callLookup(text, detected, to, config);
           }
         } else {
           [transResult, dict] = await Promise.all([
-            callTranslate(text, from, to, freshConfig),
-            callLookup(text, from, to, freshConfig),
+            callTranslate(text, from, to, config),
+            callLookup(text, from, to, config),
           ]);
         }
-      } else {
-        throw error;
+
+        const detectedLang = transResult.detectedLang;
+        return {
+          original: text,
+          translation: transResult.translation || text,
+          srcLang: detectedLang ? fromMicrosoftCode(detectedLang) : srcLang,
+          targetLang,
+          sourceLanguages: detectedLang ? [fromMicrosoftCode(detectedLang)] : [srcLang],
+          transliteration: transResult.transliteration ?? undefined,
+          dict: dict ?? undefined,
+        };
+      } catch (error) {
+        lastError = error;
+        const msg = error instanceof Error ? error.message : String(error);
+        const isAuthFailure = /返回为空|认证失败|HTTP 40[13]|HTTP 429/i.test(msg);
+        // 只有认证/token 类错误才重试,其他直接抛出
+        if (!isAuthFailure || !(error instanceof TranslationError)) {
+          throw error;
+        }
+        if (attempt === 2) {
+          log(`[microsoft] still failing after 3 attempts: ${msg}`);
+        } else {
+          log(`[microsoft] auth failure (${msg}), will invalidate & retry`);
+        }
       }
     }
-
-    const detectedLang = transResult.detectedLang;
-
-    return {
-      original: text,
-      translation: transResult.translation || text,
-      srcLang: detectedLang ? fromMicrosoftCode(detectedLang) : srcLang,
-      targetLang,
-      sourceLanguages: detectedLang ? [fromMicrosoftCode(detectedLang)] : [srcLang],
-      transliteration: transResult.transliteration ?? undefined,
-      dict: dict ?? undefined,
-    };
+    throw lastError;
   },
 };

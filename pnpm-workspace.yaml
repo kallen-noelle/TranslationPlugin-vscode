@@ -1,0 +1,4 @@
+allowBuilds:
+  '@vscode/vsce-sign': set this to true or false
+  better-sqlite3: set this to true or false
+  keytar: set this to true or false

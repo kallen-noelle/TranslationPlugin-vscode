@@ -98,11 +98,12 @@ export function registerHoverProvider(): vscode.Disposable {
             }));
 
             md.appendMarkdown('\n\n---\n');
+            // 按钮顺序: 朗读 → 收藏 → 打开翻译弹窗 → 复制译文
             md.appendMarkdown(
               `[$(unmute)](command:translation.hover.speak?${speakArgs} "朗读") ` +
               `[$(star-full)](command:translation.hover.save?${saveArgs} "收藏到生词本") ` +
-              `[$(clippy)](command:translation.hover.copy?${copyArgs} "复制译文") ` +
-              `[$(window)](command:translation.hover.openDialog?${openDialogArgs} "打开翻译弹窗")`,
+              `[$(window)](command:translation.hover.openDialog?${openDialogArgs} "打开翻译弹窗") ` +
+              `[$(clippy)](command:translation.hover.copy?${copyArgs} "复制译文")`,
             );
 
             md.supportThemeIcons = true;
@@ -187,15 +188,20 @@ export function registerHoverProvider(): vscode.Disposable {
         const srcLang = 'en';
         const targetLang = config.targetLanguage === 'en' ? 'zh-CN' : config.targetLanguage;
 
-        const result = await translate(combined, srcLang, targetLang);
-        const translated = result.translation;
+        // 翻译前保护代码块、行内标识符、URL、主题图标等不应翻译的内容
+        const { protected: protectedInput, tokens } = protectNonTranslatable(combined);
+        const result = await translate(protectedInput, srcLang, targetLang);
+        let translated = result.translation;
+        // 恢复占位符
+        translated = restoreNonTranslatable(translated ?? '', tokens);
         if (!translated || translated.trim() === combined.trim()) {
           return null;
         }
 
         const md = new vscode.MarkdownString();
-        md.appendMarkdown(`$(globe) **翻译**\n\n`);
-        md.appendMarkdown(escapeMd(translated));
+        md.appendMarkdown(`$(globe) **文档翻译**\n\n`);
+        // 翻译结果保留 Markdown 格式（代码块、反引号、链接等），不再 escape
+        md.appendMarkdown(translated);
         md.supportThemeIcons = true;
         md.isTrusted = true;
 
@@ -236,6 +242,56 @@ function estimateEnglishRatio(text: string): number {
   const letters = (text.match(/[a-zA-Z]/g) ?? []).length;
   const total = text.replace(/\s/g, '').length;
   return total === 0 ? 0 : letters / total;
+}
+
+/**
+ * 翻译前保护 Markdown 中的代码块、行内代码、链接 URL、主题图标等不应翻译的内容。
+ * 返回替换后的文本和替换表(placeholder → 原文)。
+ *
+ * 保护范围:
+ *   1. ```...``` 围栏代码块 (含语言标识)
+ *   2. `...` 行内代码/标识符
+ *   3. [...](url) 中的 URL 部分
+ *   4. $(icon-name) VS Code 主题图标
+ *   5. **text** / *text* 粗斜体里的英文标识符 (可能被引擎误译)
+ */
+function protectNonTranslatable(text: string): { protected: string; tokens: string[] } {
+  const tokens: string[] = [];
+  const push = (m: string): string => {
+    const idx = tokens.length;
+    tokens.push(m);
+    return `<<KEEP_${idx}>>`;
+  };
+
+  let protectedText = text;
+
+  // 1. 围栏代码块 ``` ... ```
+  protectedText = protectedText.replace(/```[\s\S]*?```/g, (m) => push(m));
+
+  // 2. 行内代码 `...`
+  protectedText = protectedText.replace(/`[^`]+`/g, (m) => push(m));
+
+  // 3. Markdown 链接 URL [...](url) — 只保护 url 部分
+  protectedText = protectedText.replace(/(\[([^\]]*)\]\()([^)]+)(\))/g, (_m, pre, label, url, post) => {
+    const urlPlaceholder = push(url);
+    return `${pre}${label}${urlPlaceholder}${post}`;
+  });
+
+  // 4. VS Code 主题图标 $(name)
+  protectedText = protectedText.replace(/\$\([a-z][a-z0-9-]*\)/gi, (m) => push(m));
+
+  // 5. 命令链接 command:... — 保护整个命令 URI
+  protectedText = protectedText.replace(/\(command:[^)]+\)/g, (m) => push(m));
+
+  return { protected: protectedText, tokens };
+}
+
+/** 用保护表把占位符恢复成原文。 */
+function restoreNonTranslatable(text: string, tokens: string[]): string {
+  return text.replace(/<<KEEP_(\d+)>>/g, (_m, idx) => {
+    const i = parseInt(idx, 10);
+    return Number.isFinite(i) && i >= 0 && i < tokens.length ? tokens[i] : _m;
+  });
 }
 
 function escapeMd(text: string): string {

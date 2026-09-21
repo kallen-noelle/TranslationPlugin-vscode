@@ -28,6 +28,19 @@
   .card .word { font-size: 32px; font-weight: 700; margin: 8px 0 2px; }
   .card .phonetic { color: var(--muted); font-size: 14px; margin-bottom: 12px; }
   .card .translation { font-size: 16px; margin-bottom: 16px; }
+  .card .definitions { margin-bottom: 16px; }
+  .card .definitions .def-row {
+    display: flex; align-items: flex-start; gap: 8px;
+    font-size: 14px; line-height: 1.55; margin-bottom: 4px;
+  }
+  .card .definitions .pos-tag {
+    flex-shrink: 0; min-width: 48px;
+    color: var(--vscode-button-background, #0e639c);
+    font-weight: 600; font-size: 12px;
+    background: color-mix(in srgb, var(--vscode-button-background) 15%, transparent);
+    padding: 1px 8px; border-radius: 3px; text-align: center;
+  }
+  .card .definitions .def-meaning { color: var(--fg); }
   .card .example {
     background: var(--vscode-textBlockQuote-background, transparent);
     border-left: 3px solid var(--button-bg);
@@ -51,6 +64,7 @@
     <div class="word" id="word"></div>
     <div class="phonetic" id="phonetic"></div>
     <div class="translation" id="translation"></div>
+    <div class="definitions" id="definitions"></div>
     <div class="example" id="example"></div>
     <div class="example-trans" id="exampleTrans"></div>
     <div class="actions">
@@ -87,7 +101,24 @@
       if (msg.type !== 'word') return;
       document.getElementById('word').textContent = msg.item.word;
       document.getElementById('phonetic').textContent = msg.item.phonetic || '';
-      document.getElementById('translation').textContent = msg.item.translation;
+
+      // 渲染词性分组释义(优先 definitions, 回退到 translation)
+      const transEl = document.getElementById('translation');
+      const defEl = document.getElementById('definitions');
+      const defs = msg.item.definitions;
+      if (Array.isArray(defs) && defs.length > 0) {
+        transEl.style.display = 'none';
+        defEl.innerHTML = defs
+          .map((d) =>
+            `<div class="def-row"><span class="pos-tag">${d.pos}</span><span class="def-meaning">${d.meaning}</span></div>`,
+          )
+          .join('');
+      } else {
+        transEl.style.display = '';
+        transEl.textContent = msg.item.translation || '';
+        defEl.innerHTML = '';
+      }
+
       document.getElementById('example').textContent = msg.item.example;
       document.getElementById('exampleTrans').textContent = msg.item.exampleTranslation || '';
       document.getElementById('date').textContent = msg.date;

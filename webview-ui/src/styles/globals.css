@@ -1,0 +1,119 @@
+@import "tailwindcss";
+
+/* ── Tailwind v4 @theme: map VS Code CSS variables to semantic tokens ──
+   VS Code injects theme values via CSS custom properties.
+   We remap them once here so Tailwind utilities (bg-bg, text-fg, border-border, ...)
+   automatically track the active VS Code theme (dark/light/high-contrast). */
+
+@theme {
+  --color-bg: var(--vscode-editor-background, #1e1e1e);
+  --color-fg: var(--vscode-editor-foreground, #cccccc);
+  --color-muted: var(--vscode-descriptionForeground, #9d9d9d);
+  --color-border: var(--vscode-widget-border, #454545);
+  --color-input: var(--vscode-input-background, #3c3c3c);
+  --color-input-fg: var(--vscode-input-foreground, #cccccc);
+  --color-input-border: var(--vscode-input-border, transparent);
+  --color-primary: var(--vscode-button-background, #0e639c);
+  --color-primary-fg: var(--vscode-button-foreground, #ffffff);
+  --color-link: var(--vscode-textLink-foreground, #3794ff);
+  --color-error: var(--vscode-errorForeground, #f48771);
+  --color-success: var(--vscode-testing-iconPassed, #4ec9b0);
+  --color-hover: var(--vscode-list-hoverBackground, #2a2d2e);
+  --color-active: var(--vscode-list-activeSelectionBackground, #094771);
+  --color-sidebar-bg: var(--vscode-sideBar-background, #252526);
+  --color-quote-bg: var(--vscode-textBlockQuote-background, transparent);
+
+  /* Fonts */
+  --font-sans: var(--vscode-font-family, system-ui, sans-serif);
+  --font-size-base: var(--vscode-font-size, 13px);
+
+  /* Radius – VS Code default is sharp, we soften slightly */
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 8px;
+}
+
+/* ── Layer base: reset + body defaults ── */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html,
+  body {
+    position: relative;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  #root {
+    /* 绝对定位强制贴死 body，绕过 VS Code webview 里 flex 容器
+       导致 #root 莫名往下偏移 ~20px 的 bug。 */
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Input / textarea / select – use VS Code native styles */
+  input,
+  textarea,
+  select {
+    background: var(--color-input);
+    color: var(--color-input-fg);
+    border: 1px solid var(--color-input-border);
+    border-radius: 2px;
+    font-family: inherit;
+    font-size: inherit;
+  }
+
+  input {
+    padding: 6px 8px;
+  }
+
+  textarea {
+    padding: 8px;
+    resize: vertical;
+    line-height: 1.5;
+  }
+
+  select {
+    padding: 4px 6px;
+    cursor: pointer;
+    font-size: 12px;
+  }
+
+  button {
+    font-family: inherit;
+    font-size: inherit;
+    cursor: pointer;
+  }
+
+  button:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 5px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}

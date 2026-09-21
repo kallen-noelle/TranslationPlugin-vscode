@@ -228,12 +228,15 @@
     function doTranslate() {
       const text = $('input').value.trim();
       if (!text) return;
+      // 兜底: srcLang/targetLang 为空(首次弹窗 languages 下拉框尚未填充时)用默认值
+      const srcLang = $('srcLang').value || 'auto';
+      const targetLang = $('targetLang').value || 'zh-CN';
       setLoading();
       vscode.postMessage({
         type: 'translate',
         text,
-        srcLang: $('srcLang').value,
-        targetLang: $('targetLang').value,
+        srcLang,
+        targetLang,
       });
     }
 
