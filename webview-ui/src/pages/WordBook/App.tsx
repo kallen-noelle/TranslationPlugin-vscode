@@ -378,7 +378,7 @@ export default function App() {
           className="inline-flex cursor-pointer items-center gap-1 rounded-[4px] border-0 bg-transparent p-[3px_6px] leading-none text-[var(--vscode-sideBar-foreground)] hover:bg-[var(--vscode-list-hoverBackground)]"
           onClick={() => runCommand('translation.wordOfDay')}
         >
-          <Lightbulb size={15} color="#fff700" strokeWidth={1.75} />
+          <Lightbulb size={15}  strokeWidth={1.75} />
         </button>
         <button
           type="button"

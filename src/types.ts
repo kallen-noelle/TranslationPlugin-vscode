@@ -11,6 +11,19 @@ export interface DictItem {
   entries?: { translation: string; backTranslations: string[] }[];
 }
 
+/**
+ * 一条双语例句（来自微软 texamplev3 端点）。
+ * source/target 六段拆分是为了在 UI 中给关键词加粗高亮。
+ */
+export interface ExampleItem {
+  sourcePrefix: string;
+  sourceTerm: string;
+  sourceSuffix: string;
+  targetPrefix: string;
+  targetTerm: string;
+  targetSuffix: string;
+}
+
 /** Result of a translation request. */
 export interface Translation {
   original: string;
@@ -26,6 +39,10 @@ export interface Translation {
   transliteration?: string | null;
   /** Dictionary entries. */
   dict?: DictItem[];
+  /** Example sentences (bilingual). */
+  examples?: ExampleItem[];
+  /** Spell-corrected original text (from Bing spellcheck), if any. */
+  spelling?: string | null;
 }
 
 /** A translation engine. */

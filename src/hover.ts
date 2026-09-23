@@ -77,6 +77,17 @@ export function registerHoverProvider(): vscode.Disposable {
               }
             }
 
+            // Example sentences
+            if (result.examples && result.examples.length > 0) {
+              md.appendMarkdown('\n\n---\n');
+              for (const ex of result.examples.slice(0, 3)) {
+                md.appendMarkdown(
+                  `\n${escapeMd(ex.sourcePrefix)}**${escapeMd(ex.sourceTerm)}**${escapeMd(ex.sourceSuffix)}` +
+                  `  \n&nbsp;&nbsp;↳ ${escapeMd(ex.targetPrefix)}**${escapeMd(ex.targetTerm)}**${escapeMd(ex.targetSuffix)}`,
+                );
+              }
+            }
+
             // Action links
             const translation = result.translation ?? '';
             const resultSrcLang = result.srcLang || srcLang;

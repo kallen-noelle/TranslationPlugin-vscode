@@ -27,11 +27,22 @@ interface DictGroup {
   entries?: DictEntry[];
 }
 
+interface ExampleItem {
+  sourcePrefix: string;
+  sourceTerm: string;
+  sourceSuffix: string;
+  targetPrefix: string;
+  targetTerm: string;
+  targetSuffix: string;
+}
+
 interface TranslationResult {
   original: string;
   translation: string;
   transliteration?: string;
   dict?: DictGroup[];
+  examples?: ExampleItem[];
+  spelling?: string | null;
   srcLang?: string;
   targetLang?: string;
 }
@@ -311,6 +322,7 @@ export default function App() {
 /* ── Result sub-view ── */
 function ResultView({ result }: { result: TranslationResult }) {
   const hasDict = !!(result.dict && result.dict.length > 0);
+  const hasExamples = !!(result.examples && result.examples.length > 0);
 
   return (
     <div className="whitespace-pre-wrap break-words">
@@ -348,6 +360,34 @@ function ResultView({ result }: { result: TranslationResult }) {
                   )}
                 </div>
               ))}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* 拼写纠错提示 */}
+      {result.spelling && result.spelling !== result.original && (
+        <div className="mt-2 text-[12px] text-[var(--vscode-descriptionForeground)]">
+          是否想输入: <span className="font-semibold">{result.spelling}</span>
+        </div>
+      )}
+
+      {/* 例句 */}
+      {hasExamples && (
+        <div className="mt-2 border-t border-[var(--vscode-widget-border)] pt-2">
+          <div className="mb-1.5 text-[12px] uppercase text-[var(--vscode-descriptionForeground)]">例句</div>
+          {result.examples!.map((ex, ei) => (
+            <div key={ei} className="mb-1.5">
+              <div className="text-[12px] text-[var(--vscode-descriptionForeground)]">
+                {ex.sourcePrefix}
+                <span className="font-semibold text-[var(--vscode-editor-foreground)]">{ex.sourceTerm}</span>
+                {ex.sourceSuffix}
+              </div>
+              <div className="text-[12px]">
+                {ex.targetPrefix}
+                <span className="font-semibold">{ex.targetTerm}</span>
+                {ex.targetSuffix}
+              </div>
             </div>
           ))}
         </div>
